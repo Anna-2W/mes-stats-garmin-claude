@@ -50,8 +50,20 @@ async function setupPeriodPicker(select, dateInput) {
   select.value = last ? "since-last" : "28";
 
   dateInput.max = isoToday();
+  // Ouvre le calendrier de Chrome : plus simple que de taper jj/mm/aaaa.
+  const openCalendar = () => {
+    try {
+      dateInput.showPicker();
+    } catch {
+      dateInput.focus(); // navigateur sans showPicker : on garde la saisie au clavier
+    }
+  };
   const syncDate = () => (dateInput.hidden = select.value !== "custom");
-  select.addEventListener("change", syncDate);
+  select.addEventListener("change", () => {
+    syncDate();
+    if (select.value === "custom") openCalendar();
+  });
+  dateInput.addEventListener("click", openCalendar);
   syncDate();
 
   return function resolveDays() {

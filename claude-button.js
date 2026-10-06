@@ -34,6 +34,8 @@
                  border-radius: 50%; animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
       .actions { display: flex; gap: 6px; margin-top: 10px; }
+      .field input[type="date"] { cursor: pointer; }
+      .field input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1; cursor: pointer; }
       [hidden] { display: none !important; }
     </style>
     <div class="panel" hidden>
