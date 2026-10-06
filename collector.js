@@ -129,6 +129,18 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   const cell = (v) => String(v ?? "-").replace(/\|/g, "/").replace(/\n/g, " ");
   const isFoot = (type) => /running|walking|hiking/.test(type);
   const speed = (type, mps) => (mps > 0 ? (isFoot(type) ? `${dur(1000 / mps)} /km` : `${num(mps * 3.6, 1)} km/h`) : "-");
+  // Heure locale d'un horodatage Garmin "Local" (déjà décalé : on le lit en UTC), en minutes depuis minuit.
+  const minutesOfDay = (ts) => (ts ? new Date(ts).getUTCHours() * 60 + new Date(ts).getUTCMinutes() : null);
+  // Heure de coucher comptée depuis midi, pour que 23:30 et 00:30 donnent une moyenne de 00:00 et pas 12:00.
+  const bedMinutes = (ts) => {
+    const m = minutesOfDay(ts);
+    return m == null ? null : m < 12 * 60 ? m + 24 * 60 : m;
+  };
+  const clock = (m) => {
+    if (m == null) return "-";
+    const r = Math.round(m) % (24 * 60);
+    return `${String(Math.floor(r / 60)).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`;
+  };
   const avg = (values) => {
     const ok = values.filter((v) => v != null && v >= 0);
     return ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : null;
@@ -295,6 +307,8 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       const r = Array.isArray(readiness) ? readiness[0] : readiness;
       return {
         date,
+        bed: bedMinutes(s?.sleepStartTimestampLocal),
+        wake: minutesOfDay(s?.sleepEndTimestampLocal),
         sleep: s?.sleepTimeSeconds,
         sleepScore: s?.sleepScores?.overall?.value,
         deep: s?.deepSleepSeconds,
@@ -324,20 +338,20 @@ async function collectGarminData({ days, sport = "all", details = false, activit
         weeks.get(key).push(d);
       }
       out.push("## Moyennes par semaine", "");
-      out.push("| Semaine du | Sommeil | Score sommeil | HRV nuit (ms) | FC repos | Stress moy | Body Battery max | Readiness | Pas / jour |");
-      out.push("|---|---|---|---|---|---|---|---|---|");
+      out.push("| Semaine du | Coucher | Réveil | Sommeil | Score sommeil | HRV nuit (ms) | FC repos | Stress moy | Body Battery max | Readiness | Pas / jour |");
+      out.push("|---|---|---|---|---|---|---|---|---|---|---|");
       for (const [week, ds] of weeks) {
         const m = (k) => avg(ds.map((d) => d[k]));
-        out.push(`| ${week} | ${hm(m("sleep"))} | ${num(m("sleepScore"))} | ${num(m("hrv"))} | ${num(m("rhr"))} | ${num(m("stress"))} | ${num(m("bbMax"))} | ${num(m("readiness"))} | ${num(m("steps"))} |`);
+        out.push(`| ${week} | ${clock(m("bed"))} | ${clock(m("wake"))} | ${hm(m("sleep"))} | ${num(m("sleepScore"))} | ${num(m("hrv"))} | ${num(m("rhr"))} | ${num(m("stress"))} | ${num(m("bbMax"))} | ${num(m("readiness"))} | ${num(m("steps"))} |`);
       }
       out.push("");
     }
 
     out.push(older.length ? `## Journées (${recent.length} derniers jours)` : "## Journées", "");
-    out.push("| Date | Sommeil | Score sommeil | Profond | REM | HRV nuit (ms) | Statut HRV | FC repos | Stress moy | Body Battery max / min | Readiness | Pas |");
-    out.push("|---|---|---|---|---|---|---|---|---|---|---|---|");
+    out.push("| Date | Coucher | Réveil | Sommeil | Score sommeil | Profond | REM | HRV nuit (ms) | Statut HRV | FC repos | Stress moy | Body Battery max / min | Readiness | Pas |");
+    out.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     for (const d of recent) {
-      out.push(`| ${d.date} | ${hm(d.sleep)} | ${num(d.sleepScore)} | ${hm(d.deep)} | ${hm(d.rem)} | ${num(d.hrv)} | ${cell(d.hrvStatus)} | ${num(d.rhr)} | ${num(d.stress)} | ${num(d.bbMax)} / ${num(d.bbMin)} | ${num(d.readiness)} | ${num(d.steps)} |`);
+      out.push(`| ${d.date} | ${clock(d.bed)} | ${clock(d.wake)} | ${hm(d.sleep)} | ${num(d.sleepScore)} | ${hm(d.deep)} | ${hm(d.rem)} | ${num(d.hrv)} | ${cell(d.hrvStatus)} | ${num(d.rhr)} | ${num(d.stress)} | ${num(d.bbMax)} / ${num(d.bbMin)} | ${num(d.readiness)} | ${num(d.steps)} |`);
     }
     out.push("");
   }
