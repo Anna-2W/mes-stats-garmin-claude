@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Mes Stats Garmin pour Claude</title>
+  <style>
+    body { width: 360px; margin: 0; padding: 16px; font: 13px/1.4 system-ui, sans-serif; color: #1a1a1a; }
+    h1 { font-size: 15px; margin: 0 0 12px; }
+    fieldset { border: 1px solid #ddd; border-radius: 6px; margin: 0 0 12px; padding: 8px 12px; }
+    legend { font-weight: 600; padding: 0 4px; }
+    label { display: block; margin: 4px 0; cursor: pointer; }
+    button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font: inherit; }
+    button.primary { width: 100%; background: #0891b2; border-color: #0891b2; color: #fff; font-weight: 600; }
+    button:disabled { opacity: .5; cursor: default; }
+    #status { margin: 10px 0; min-height: 1em; color: #555; display: flex; align-items: center; gap: 8px; }
+    .spinner { width: 14px; height: 14px; flex: none; border: 2px solid #eee; border-top-color: #0891b2; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #progress { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin-top: 10px; }
+    #progress-bar { height: 100%; width: 0; background: #0891b2; transition: width .3s; }
+    #status.error { color: #b00020; }
+    textarea { width: 100%; height: 160px; box-sizing: border-box; font: 11px/1.4 ui-monospace, monospace; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    .row button { flex: 1; }
+    .note { color: #777; font-size: 11px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Mes Stats Garmin pour Claude</h1>
+
+  <fieldset>
+    <legend>Période</legend>
+    <label><input type="radio" name="days" value="7"> 7 derniers jours</label>
+    <label><input type="radio" name="days" value="28" checked> 4 dernières semaines</label>
+    <label><input type="radio" name="days" value="90"> 3 derniers mois</label>
+    <label><input type="radio" name="days" value="180"> 6 derniers mois</label>
+    <label><input type="radio" name="days" value="365"> 1 an</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Données</legend>
+    <label><input type="checkbox" id="activities" checked> Activités :
+      <select id="sport">
+        <option value="all">toutes</option>
+        <option value="running">course</option>
+        <option value="strength">muscu</option>
+        <option value="cycling">vélo</option>
+        <option value="swimming">natation</option>
+        <option value="walking">marche / rando</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="details"> Détail de chaque séance (tours, zones, séries)</label>
+    <label><input type="checkbox" id="daily" checked> Journées (sommeil, HRV, FC repos, stress, Body Battery)</label>
+    <label><input type="checkbox" id="fitness" checked> État de forme (VO2 max, statut, prédictions)</label>
+  </fieldset>
+
+  <button class="primary" id="go">Récupérer mes données</button>
+  <div id="progress" hidden><div id="progress-bar"></div></div>
+  <div id="status"></div>
+
+  <div id="result" hidden>
+    <textarea id="output" readonly></textarea>
+    <div class="row">
+      <button id="copy">Copier</button>
+      <button id="download">Télécharger .md</button>
+    </div>
+    <p class="note">Colle le texte ou glisse le fichier dans une conversation Claude.</p>
+  </div>
+
+  <p class="note">Tu dois être connecté·e à connect.garmin.com dans ce navigateur. Rien n'est envoyé ailleurs.</p>
+  <script src="collector.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
