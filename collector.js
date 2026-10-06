@@ -410,13 +410,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     out.push("");
 
     if (stress) {
-      out.push("## Stress", "");
-      out.push(
-        "Le stress Garmin (0 à 100) est un stress physiologique calculé à partir de la variabilité cardiaque : 0-25 repos, 26-50 faible, 51-75 moyen, 76-100 élevé. " +
-          "Il monte avec le stress émotionnel, mais aussi avec l'alcool, la caféine, la chaleur, une digestion lourde, un voyage, un début de maladie, le manque de sommeil ou la phase du cycle menstruel. " +
-          "La montre ne connaît pas la cause : demande-moi le contexte avant de conclure.",
-        ""
-      );
+      out.push("## Stress (0 à 100)", "");
 
       out.push("### Répartition par jour", "");
       out.push("| Date | Moyenne | Max | Repos | Faible | Moyen | Élevé | Pendant le sommeil |");
