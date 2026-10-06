@@ -118,7 +118,7 @@ def screenshot_privacy() -> Image.Image:
             ax = x0 + w + 15
             d.line((ax, 380, ax + 55, 380), fill=WHITE, width=8)
             d.polygon([(ax + 60, 380), (ax + 42, 366), (ax + 42, 394)], fill=WHITE)
-    promises = ["Aucun mot de passe demandé", "Aucune donnée stockée", "Aucun suivi, aucune pub", "Code source ouvert"]
+    promises = ["Aucun mot de passe demandé", "Aucune donnée sportive stockée", "Aucun suivi, aucune pub", "Code source ouvert"]
     for i, p in enumerate(promises):
         x = 80 + (i % 2) * 560
         y = 560 + (i // 2) * 60

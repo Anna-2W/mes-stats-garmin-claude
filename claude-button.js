@@ -17,7 +17,7 @@
                background: #fff; color: #1a1a1a; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
       .panel h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
       .field { display: block; margin-bottom: 8px; color: #555; }
-      .field select { display: block; width: 100%; margin-top: 3px; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
+      .field select, .field input[type="date"] { display: block; width: 100%; margin-top: 3px; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
                background: #fff; color: #1a1a1a; }
       .check { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 10px; color: #1a1a1a; cursor: pointer; }
       .go { width: 100%; padding: 9px; border-radius: 8px; border: 0; background: #0891b2; color: #fff; font-weight: 600; cursor: pointer; }
@@ -39,13 +39,8 @@
     <div class="panel" hidden>
       <h2>Ajouter mes données Garmin</h2>
       <label class="field">Période
-        <select class="days">
-          <option value="7">7 derniers jours</option>
-          <option value="28" selected>4 dernières semaines</option>
-          <option value="90">3 derniers mois</option>
-          <option value="180">6 derniers mois</option>
-          <option value="365">1 an</option>
-        </select>
+        <select class="days"></select>
+        <input type="date" class="since" hidden>
       </label>
       <label class="field">Activités
         <select class="sport">
@@ -76,6 +71,8 @@
   const actions = $(".actions");
   let busy = false;
   let lastMarkdown = "";
+  let resolveDays = () => 28;
+  setupPeriodPicker($(".days"), $(".since")).then((fn) => (resolveDays = fn));
 
   function setStatus(text, kind = "") {
     status.hidden = false;
@@ -130,7 +127,7 @@
       try {
         const res = await chrome.runtime.sendMessage({
           type: "collect",
-          days: Number($(".days").value),
+          days: resolveDays(),
           sport: $(".sport").value,
           details: $(".details").checked,
         });
@@ -140,6 +137,7 @@
         const name = `garmin-${new Date().toISOString().slice(0, 10)}.md`;
         const file = new File([res.markdown], name, { type: "text/markdown" });
         if (attachToComposer(file)) {
+          await rememberExport();
           setStatus(`Fichier ajouté au message ✓${res.warnings ? ` (${res.warnings} donnée(s) manquante(s))` : ""}`, "ok");
         } else {
           setStatus("Je n'ai pas trouvé la zone de message. Copie le texte et colle-le.", "error");

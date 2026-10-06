@@ -16,9 +16,19 @@ function setProgress(done, total) {
   $("progress-bar").style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
 }
 
+let resolveDays = () => 28;
+setupPeriodPicker($("days"), $("since")).then((fn) => (resolveDays = fn));
+
 $("go").addEventListener("click", async () => {
+  let days;
+  try {
+    days = resolveDays();
+  } catch (e) {
+    setStatus(e.message, { error: true });
+    return;
+  }
   const options = {
-    days: Number(document.querySelector('input[name="days"]:checked').value),
+    days,
     activities: $("activities").checked,
     sport: $("sport").value,
     details: $("details").checked,
@@ -36,6 +46,7 @@ $("go").addEventListener("click", async () => {
       setStatus(`${p.label} (${Math.round((p.done / p.total) * 100)} %)`, { busy: true });
     });
     $("output").value = result.markdown;
+    await rememberExport();
     $("result").hidden = false;
     setProgress(1, 1);
     setStatus(result.warnings ? `Terminé, ${result.warnings} donnée(s) manquante(s).` : "Terminé.");

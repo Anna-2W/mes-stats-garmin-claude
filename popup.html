@@ -9,6 +9,8 @@
     fieldset { border: 1px solid #ddd; border-radius: 6px; margin: 0 0 12px; padding: 8px 12px; }
     legend { font-weight: 600; padding: 0 4px; }
     label { display: block; margin: 4px 0; cursor: pointer; }
+    #days, #since { display: block; width: 100%; margin: 4px 0; padding: 4px; }
+    [hidden] { display: none !important; }
     button { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer; font: inherit; }
     button.primary { width: 100%; background: #0891b2; border-color: #0891b2; color: #fff; font-weight: 600; }
     button:disabled { opacity: .5; cursor: default; }
@@ -29,11 +31,8 @@
 
   <fieldset>
     <legend>Période</legend>
-    <label><input type="radio" name="days" value="7"> 7 derniers jours</label>
-    <label><input type="radio" name="days" value="28" checked> 4 dernières semaines</label>
-    <label><input type="radio" name="days" value="90"> 3 derniers mois</label>
-    <label><input type="radio" name="days" value="180"> 6 derniers mois</label>
-    <label><input type="radio" name="days" value="365"> 1 an</label>
+    <select id="days"></select>
+    <input type="date" id="since" hidden>
   </fieldset>
 
   <fieldset>
@@ -67,6 +66,7 @@
   </div>
 
   <p class="note">Tu dois être connecté·e à connect.garmin.com dans ce navigateur. Rien n'est envoyé ailleurs.</p>
+  <script src="periods.js"></script>
   <script src="collector.js"></script>
   <script src="popup.js"></script>
 </body>

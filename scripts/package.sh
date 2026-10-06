@@ -8,6 +8,6 @@ out="dist/mes-stats-garmin-claude-${version}.zip"
 
 mkdir -p dist
 rm -f "$out"
-zip -q -r "$out" manifest.json background.js collector.js claude-button.js popup.html popup.js icons
+zip -q -r "$out" manifest.json background.js collector.js claude-button.js periods.js popup.html popup.js icons
 echo "$out"
 unzip -l "$out"

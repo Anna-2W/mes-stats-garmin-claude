@@ -32,12 +32,13 @@ CE QUI EST INCLUS
 • Activités : distance, durée, allure, FC moyenne et max, dénivelé, effet d'entraînement, charge
 • Détail des séances (option) : tours et fractions, zones cardio, cadence, foulée, puissance, météo, séries de musculation
 • Journées : sommeil et phases, HRV, FC au repos, stress, Body Battery, Readiness, pas
-• De 7 jours à 1 an, filtrable par sport (course, muscu, vélo, natation, marche)
+• De 1 jour à 1 an, ou seulement les nouvelles données depuis ton dernier envoi
+• Filtrable par sport (course, muscu, vélo, natation, marche)
 
 100 % LOCAL ET GRATUIT
 • Aucun compte à créer, aucun mot de passe demandé : l'extension utilise ta session Garmin Connect déjà ouverte.
 • Aucun serveur : tes données ne passent que par ton navigateur, puis par la conversation Claude que tu choisis.
-• Aucun suivi, aucune publicité, aucune donnée stockée.
+• Aucun suivi, aucune publicité, aucune donnée sportive stockée.
 • Code source ouvert.
 
 EXEMPLES DE QUESTIONS
@@ -96,6 +97,11 @@ Nécessaire pour lire les données de l'utilisateur (activités, sommeil, fréqu
 Script de contenu sur `https://claude.ai/*` :
 ```
 Affiche le bouton « ⌚ Garmin » dans claude.ai et joint le fichier de données au message que l'utilisateur est en train d'écrire. Le script ne lit pas les conversations.
+```
+
+`storage` (à ajouter lors de l'envoi de la 1.0.1) :
+```
+Conserve uniquement, en local, la date du dernier envoi de l'utilisateur pour lui proposer l'option « Depuis mon dernier envoi ». Aucune donnée sportive ou de santé n'est stockée.
 ```
 
 **Code distant** (Remote code) : `Non, je n'utilise pas de code distant.`
