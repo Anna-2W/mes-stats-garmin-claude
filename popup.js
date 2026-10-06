@@ -32,6 +32,8 @@ $("go").addEventListener("click", async () => {
     activities: $("activities").checked,
     sport: $("sport").value,
     details: $("details").checked,
+    stress: $("stress").checked,
+    cycle: $("cycle").checked,
     daily: $("daily").checked,
     fitness: $("fitness").checked,
   };

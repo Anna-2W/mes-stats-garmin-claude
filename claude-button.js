@@ -53,6 +53,8 @@
         </select>
       </label>
       <label class="check"><input type="checkbox" class="details"> Détail de chaque séance (tours, zones, séries)</label>
+      <label class="check"><input type="checkbox" class="stress" checked> Stress détaillé (heure par heure, répartition, journal)</label>
+      <label class="check"><input type="checkbox" class="cycle"> Cycle menstruel (si suivi dans Garmin)</label>
       <button class="go">Ajouter à la conversation</button>
       <div class="bar" hidden><div></div></div>
       <div class="status" hidden></div>
@@ -130,6 +132,8 @@
           days: resolveDays(),
           sport: $(".sport").value,
           details: $(".details").checked,
+          stress: $(".stress").checked,
+          cycle: $(".cycle").checked,
         });
         if (!res?.ok) throw new Error(res?.error || "Erreur inconnue.");
         lastMarkdown = res.markdown;

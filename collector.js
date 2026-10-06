@@ -54,7 +54,7 @@ async function runCollection(options, onProgress) {
 
 // Exécutée DANS la page connect.garmin.com : doit être autonome (aucune variable externe).
 // options : days, sport ("all", "running", "strength", ...), details, activities, daily, fitness.
-async function collectGarminData({ days, sport = "all", details = false, activities = true, daily = true, fitness = true }) {
+async function collectGarminData({ days, sport = "all", details = false, activities = true, daily = true, fitness = true, stress = true, cycle = false }) {
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
   if (!csrf) return { error: "Session Garmin introuvable : recharge connect.garmin.com et reconnecte-toi." };
 
@@ -140,6 +140,44 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     if (m == null) return "-";
     const r = Math.round(m) % (24 * 60);
     return `${String(Math.floor(r / 60)).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`;
+  };
+  // Résumé lisible d'une réponse Garmin au format inconnu ou variable : champs simples seulement, sans identifiants.
+  const flatten = (obj, max = 300) => {
+    const parts = [];
+    const walk = (o, key) => {
+      if (o == null || o === "" || o === false || parts.length > 30) return;
+      if (Array.isArray(o)) return o.slice(0, 10).forEach((x) => walk(x, key));
+      if (typeof o === "object") {
+        for (const [k, v] of Object.entries(o)) {
+          if (!/(^id$|Id$|uuid|^pk|timestamp|Timestamp|GMT|userProfile|^date$|calendarDate)/i.test(k)) walk(v, k);
+        }
+        return;
+      }
+      parts.push(`${key}: ${o}`);
+    };
+    walk(obj, "");
+    const text = parts.join(", ");
+    return text.length > max ? `${text.slice(0, max)}...` : text;
+  };
+  // Moyenne du stress pour chaque heure locale (Garmin mesure toutes les 3 min, horodatage GMT).
+  const hourlyStress = (day) => {
+    const values = day?.stressValuesArray;
+    if (!Array.isArray(values) || !values.length) return null;
+    let offset = -new Date().getTimezoneOffset() * 60000;
+    if (day.startTimestampLocal && day.startTimestampGMT) {
+      const local = Date.parse(`${day.startTimestampLocal}Z`);
+      const gmt = Date.parse(`${day.startTimestampGMT}Z`);
+      if (!Number.isNaN(local - gmt)) offset = local - gmt;
+    }
+    const sums = Array(24).fill(0);
+    const counts = Array(24).fill(0);
+    for (const [ts, v] of values) {
+      if (v == null || v < 0) continue; // -1 / -2 : pas de mesure ou activité
+      const h = new Date(ts + offset).getUTCHours();
+      sums[h] += v;
+      counts[h]++;
+    }
+    return sums.map((sum, h) => (counts[h] ? sum / counts[h] : null));
   };
   const avg = (values) => {
     const ok = values.filter((v) => v != null && v >= 0);
@@ -293,12 +331,19 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   if (daily && displayName) {
     let dayDone = 0;
     step(`Journées 0/${days}`);
+    // Courbe de stress et contexte : seulement pour les jours détaillés, pour limiter les appels.
+    const detailedDates = new Set(dates.slice(-DETAILED_DAYS));
     const rows = await inBatches(dates, 4, async (date) => {
-      const [summary, sleep, hrv, readiness] = await Promise.all([
+      const detailed = detailedDates.has(date);
+      const [summary, sleep, hrv, readiness, stressDay, lifestyle, cycleDay] = await Promise.all([
         safe(`/usersummary-service/usersummary/daily/${displayName}`, { calendarDate: date }),
         safe(`/wellness-service/wellness/dailySleepData/${displayName}`, { date, nonSleepBufferMinutes: 60 }),
         safe(`/hrv-service/hrv/${date}`),
         safe(`/metrics-service/metrics/trainingreadiness/${date}`),
+        stress && detailed ? safe(`/wellness-service/wellness/dailyStress/${date}`) : null,
+        // Journal « Lifestyle » de l'app Garmin : absent si jamais utilisé, on ne compte pas d'erreur.
+        stress && detailed ? api(`/lifestylelogging-service/dailyLog/${date}`).catch(() => null) : null,
+        cycle && detailed ? api(`/periodichealth-service/menstrualcycle/dayview/${date}`).catch(() => null) : null,
       ]);
       done++;
       dayDone++;
@@ -321,6 +366,15 @@ async function collectGarminData({ days, sport = "all", details = false, activit
         bbMin: summary?.bodyBatteryLowestValue,
         readiness: r?.score,
         steps: summary?.totalSteps,
+        stressMax: summary?.maxStressLevel,
+        stressRest: summary?.restStressDuration,
+        stressLow: summary?.lowStressDuration,
+        stressMedium: summary?.mediumStressDuration,
+        stressHigh: summary?.highStressDuration,
+        sleepStress: s?.avgSleepStress,
+        hourly: hourlyStress(stressDay),
+        lifestyle: lifestyle ? flatten(lifestyle) : "",
+        cycle: cycleDay ? flatten(cycleDay, 200) : "",
       };
     });
 
@@ -354,6 +408,50 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       out.push(`| ${d.date} | ${clock(d.bed)} | ${clock(d.wake)} | ${hm(d.sleep)} | ${num(d.sleepScore)} | ${hm(d.deep)} | ${hm(d.rem)} | ${num(d.hrv)} | ${cell(d.hrvStatus)} | ${num(d.rhr)} | ${num(d.stress)} | ${num(d.bbMax)} / ${num(d.bbMin)} | ${num(d.readiness)} | ${num(d.steps)} |`);
     }
     out.push("");
+
+    if (stress) {
+      out.push("## Stress", "");
+      out.push(
+        "Le stress Garmin (0 à 100) est un stress physiologique calculé à partir de la variabilité cardiaque : 0-25 repos, 26-50 faible, 51-75 moyen, 76-100 élevé. " +
+          "Il monte avec le stress émotionnel, mais aussi avec l'alcool, la caféine, la chaleur, une digestion lourde, un voyage, un début de maladie, le manque de sommeil ou la phase du cycle menstruel. " +
+          "La montre ne connaît pas la cause : demande-moi le contexte avant de conclure.",
+        ""
+      );
+
+      out.push("### Répartition par jour", "");
+      out.push("| Date | Moyenne | Max | Repos | Faible | Moyen | Élevé | Pendant le sommeil |");
+      out.push("|---|---|---|---|---|---|---|---|");
+      for (const d of recent) {
+        out.push(`| ${d.date} | ${num(d.stress)} | ${num(d.stressMax)} | ${hm(d.stressRest)} | ${hm(d.stressLow)} | ${hm(d.stressMedium)} | ${hm(d.stressHigh)} | ${num(d.sleepStress)} |`);
+      }
+      if (older.length) {
+        const m = (k) => avg(older.map((d) => d[k]));
+        out.push(`| Moyenne des ${older.length} jours précédents | ${num(m("stress"))} | ${num(m("stressMax"))} | ${hm(m("stressRest"))} | ${hm(m("stressLow"))} | ${hm(m("stressMedium"))} | ${hm(m("stressHigh"))} | ${num(m("sleepStress"))} |`);
+      }
+      out.push("");
+
+      const withCurve = recent.filter((d) => d.hourly);
+      if (withCurve.length) {
+        const hours = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
+        out.push("### Heure par heure (moyenne de chaque heure, heure locale)", "");
+        out.push(`| Date | ${hours.map((h) => `${h}h`).join(" | ")} |`);
+        out.push(`|---|${hours.map(() => "---").join("|")}|`);
+        for (const d of withCurve) out.push(`| ${d.date} | ${d.hourly.map((v) => num(v)).join(" | ")} |`);
+        const profile = hours.map((_, h) => avg(withCurve.map((d) => d.hourly[h])));
+        out.push(`| **Profil moyen** | ${profile.map((v) => `**${num(v)}**`).join(" | ")} |`);
+        out.push("");
+      }
+
+      const context = recent.filter((d) => d.lifestyle || d.cycle);
+      if (context.length) {
+        out.push("### Contexte noté dans Garmin", "");
+        for (const d of context) {
+          const bits = [d.lifestyle && `journal : ${d.lifestyle}`, d.cycle && `cycle : ${d.cycle}`].filter(Boolean);
+          out.push(`- ${d.date} : ${bits.join(" ; ")}`);
+        }
+        out.push("");
+      }
+    }
   }
 
   return { markdown: out.join("\n"), warnings };

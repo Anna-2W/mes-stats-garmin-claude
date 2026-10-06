@@ -31,7 +31,8 @@ CE QUI EST INCLUS
 • État de forme : VO2 max, statut d'entraînement, charge aiguë et chronique, prédictions 5 km, 10 km, semi et marathon
 • Activités : distance, durée, allure, FC moyenne et max, dénivelé, effet d'entraînement, charge
 • Détail des séances (option) : tours et fractions, zones cardio, cadence, foulée, puissance, météo, séries de musculation
-• Journées : sommeil et phases, HRV, FC au repos, stress, Body Battery, Readiness, pas
+• Journées : heures de coucher et de réveil, sommeil et phases, HRV, FC au repos, Body Battery, Readiness, pas
+• Stress : répartition repos / faible / moyen / élevé, courbe heure par heure, profil moyen de ta journée
 • De 1 jour à 1 an, ou seulement les nouvelles données depuis ton dernier envoi
 • Filtrable par sport (course, muscu, vélo, natation, marche)
 

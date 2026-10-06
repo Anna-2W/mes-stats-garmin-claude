@@ -43,6 +43,8 @@ Tu peux aussi cliquer sur l'icône de l'extension dans la barre de Chrome pour c
 | État de forme | VO2 max, statut d'entraînement, charge aiguë et chronique, équilibre de charge, prédictions 5 km / 10 km / semi / marathon |
 | Activités | Date, type, distance, durée, allure ou vitesse, FC moyenne et max, dénivelé, effet d'entraînement, charge, calories |
 | Détail des séances (option) | Course : tours, zones cardio, cadence, foulée, contact au sol, puissance, météo. Muscu : séries, répétitions, charges |
+| Stress (option, cochée par défaut) | Répartition repos / faible / moyen / élevé, stress max, stress pendant le sommeil, courbe heure par heure et profil moyen, journal « Lifestyle » de Garmin s'il est rempli |
+| Cycle menstruel (option, décochée par défaut) | Phase du cycle si elle est suivie dans Garmin |
 | Journées | Sommeil et phases, score de sommeil, HRV, FC au repos, stress, Body Battery, Readiness, pas. Au-delà de 4 semaines, les jours plus anciens sont résumés par semaine |
 
 ## Limites
