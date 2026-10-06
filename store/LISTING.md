@@ -32,7 +32,8 @@ CE QUI EST INCLUS
 • Activités : distance, durée, allure, FC moyenne et max, dénivelé, effet d'entraînement, charge
 • Détail des séances (option) : tours et fractions, zones cardio, cadence, foulée, puissance, météo, séries de musculation
 • Journées : heures de coucher et de réveil, sommeil et phases, HRV, FC au repos, Body Battery, Readiness, pas
-• Stress : répartition repos / faible / moyen / élevé, courbe heure par heure, profil moyen de ta journée
+• Stress : répartition repos / faible / moyen / élevé, mesures toutes les 3 minutes
+• Uniquement les chiffres de Garmin, sans moyenne ni interprétation ajoutée
 • De 1 jour à 1 an, ou seulement les nouvelles données depuis ton dernier envoi
 • Filtrable par sport (course, muscu, vélo, natation, marche)
 

@@ -58,7 +58,8 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
   if (!csrf) return { error: "Session Garmin introuvable : recharge connect.garmin.com et reconnecte-toi." };
 
-  const DETAILED_DAYS = 28; // au-delà, les journées sont résumées par semaine
+  const CONTEXT_DAYS = 28; // journal Lifestyle et cycle : seulement les 28 derniers jours, pour limiter les appels
+  const RAW_STRESS_MAX_DAYS = 7; // mesures de stress toutes les 3 min : ~480 par jour, seulement pour les courtes périodes
   const SPORTS = {
     running: { label: "Course", match: /running/ },
     strength: { label: "Muscu", match: /strength/ },
@@ -131,11 +132,6 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   const speed = (type, mps) => (mps > 0 ? (isFoot(type) ? `${dur(1000 / mps)} /km` : `${num(mps * 3.6, 1)} km/h`) : "-");
   // Heure locale d'un horodatage Garmin "Local" (déjà décalé : on le lit en UTC), en minutes depuis minuit.
   const minutesOfDay = (ts) => (ts ? new Date(ts).getUTCHours() * 60 + new Date(ts).getUTCMinutes() : null);
-  // Heure de coucher comptée depuis midi, pour que 23:30 et 00:30 donnent une moyenne de 00:00 et pas 12:00.
-  const bedMinutes = (ts) => {
-    const m = minutesOfDay(ts);
-    return m == null ? null : m < 12 * 60 ? m + 24 * 60 : m;
-  };
   const clock = (m) => {
     if (m == null) return "-";
     const r = Math.round(m) % (24 * 60);
@@ -159,8 +155,9 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     const text = parts.join(", ");
     return text.length > max ? `${text.slice(0, max)}...` : text;
   };
-  // Moyenne du stress pour chaque heure locale (Garmin mesure toutes les 3 min, horodatage GMT).
-  const hourlyStress = (day) => {
+  // Mesures brutes de stress de Garmin (toutes les 3 min), avec l'heure locale. -1 et -2 sont les codes Garmin
+  // (pas de mesure, activité), laissés tels quels.
+  const rawStress = (day) => {
     const values = day?.stressValuesArray;
     if (!Array.isArray(values) || !values.length) return null;
     let offset = -new Date().getTimezoneOffset() * 60000;
@@ -169,19 +166,10 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       const gmt = Date.parse(`${day.startTimestampGMT}Z`);
       if (!Number.isNaN(local - gmt)) offset = local - gmt;
     }
-    const sums = Array(24).fill(0);
-    const counts = Array(24).fill(0);
-    for (const [ts, v] of values) {
-      if (v == null || v < 0) continue; // -1 / -2 : pas de mesure ou activité
-      const h = new Date(ts + offset).getUTCHours();
-      sums[h] += v;
-      counts[h]++;
-    }
-    return sums.map((sum, h) => (counts[h] ? sum / counts[h] : null));
-  };
-  const avg = (values) => {
-    const ok = values.filter((v) => v != null && v >= 0);
-    return ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : null;
+    return values.map(([ts, v]) => {
+      const t = new Date(ts + offset);
+      return `${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")} ${v}`;
+    });
   };
 
   let profile;
@@ -331,16 +319,16 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   if (daily && displayName) {
     let dayDone = 0;
     step(`Journées 0/${days}`);
-    // Courbe de stress et contexte : seulement pour les jours détaillés, pour limiter les appels.
-    const detailedDates = new Set(dates.slice(-DETAILED_DAYS));
+    const contextDates = new Set(dates.slice(-CONTEXT_DAYS));
+    const wantRawStress = stress && days <= RAW_STRESS_MAX_DAYS;
     const rows = await inBatches(dates, 4, async (date) => {
-      const detailed = detailedDates.has(date);
+      const detailed = contextDates.has(date);
       const [summary, sleep, hrv, readiness, stressDay, lifestyle, cycleDay] = await Promise.all([
         safe(`/usersummary-service/usersummary/daily/${displayName}`, { calendarDate: date }),
         safe(`/wellness-service/wellness/dailySleepData/${displayName}`, { date, nonSleepBufferMinutes: 60 }),
         safe(`/hrv-service/hrv/${date}`),
         safe(`/metrics-service/metrics/trainingreadiness/${date}`),
-        stress && detailed ? safe(`/wellness-service/wellness/dailyStress/${date}`) : null,
+        wantRawStress ? safe(`/wellness-service/wellness/dailyStress/${date}`) : null,
         // Journal « Lifestyle » de l'app Garmin : absent si jamais utilisé, on ne compte pas d'erreur.
         stress && detailed ? api(`/lifestylelogging-service/dailyLog/${date}`).catch(() => null) : null,
         cycle && detailed ? api(`/periodichealth-service/menstrualcycle/dayview/${date}`).catch(() => null) : null,
@@ -352,7 +340,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       const r = Array.isArray(readiness) ? readiness[0] : readiness;
       return {
         date,
-        bed: bedMinutes(s?.sleepStartTimestampLocal),
+        bed: minutesOfDay(s?.sleepStartTimestampLocal),
         wake: minutesOfDay(s?.sleepEndTimestampLocal),
         sleep: s?.sleepTimeSeconds,
         sleepScore: s?.sleepScores?.overall?.value,
@@ -372,75 +360,38 @@ async function collectGarminData({ days, sport = "all", details = false, activit
         stressMedium: summary?.mediumStressDuration,
         stressHigh: summary?.highStressDuration,
         sleepStress: s?.avgSleepStress,
-        hourly: hourlyStress(stressDay),
+        raw: rawStress(stressDay),
         lifestyle: lifestyle ? flatten(lifestyle) : "",
         cycle: cycleDay ? flatten(cycleDay, 200) : "",
       };
     });
 
-    const recent = rows.slice(-DETAILED_DAYS);
-    const older = rows.slice(0, -DETAILED_DAYS);
-
-    if (older.length) {
-      // Regroupe par semaine (lundi), pour garder le fichier lisible sur plusieurs mois.
-      const weeks = new Map();
-      for (const d of older) {
-        const dt = new Date(`${d.date}T12:00:00`);
-        dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
-        const key = iso(dt);
-        if (!weeks.has(key)) weeks.set(key, []);
-        weeks.get(key).push(d);
-      }
-      out.push("## Moyennes par semaine", "");
-      out.push("| Semaine du | Coucher | Réveil | Sommeil | Score sommeil | HRV nuit (ms) | FC repos | Stress moy | Body Battery max | Readiness | Pas / jour |");
-      out.push("|---|---|---|---|---|---|---|---|---|---|---|");
-      for (const [week, ds] of weeks) {
-        const m = (k) => avg(ds.map((d) => d[k]));
-        out.push(`| ${week} | ${clock(m("bed"))} | ${clock(m("wake"))} | ${hm(m("sleep"))} | ${num(m("sleepScore"))} | ${num(m("hrv"))} | ${num(m("rhr"))} | ${num(m("stress"))} | ${num(m("bbMax"))} | ${num(m("readiness"))} | ${num(m("steps"))} |`);
-      }
-      out.push("");
-    }
-
-    out.push(older.length ? `## Journées (${recent.length} derniers jours)` : "## Journées", "");
+    out.push("## Journées", "");
     out.push("| Date | Coucher | Réveil | Sommeil | Score sommeil | Profond | REM | HRV nuit (ms) | Statut HRV | FC repos | Stress moy | Body Battery max / min | Readiness | Pas |");
     out.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
-    for (const d of recent) {
+    for (const d of rows) {
       out.push(`| ${d.date} | ${clock(d.bed)} | ${clock(d.wake)} | ${hm(d.sleep)} | ${num(d.sleepScore)} | ${hm(d.deep)} | ${hm(d.rem)} | ${num(d.hrv)} | ${cell(d.hrvStatus)} | ${num(d.rhr)} | ${num(d.stress)} | ${num(d.bbMax)} / ${num(d.bbMin)} | ${num(d.readiness)} | ${num(d.steps)} |`);
     }
     out.push("");
 
     if (stress) {
       out.push("## Stress (0 à 100)", "");
-
-      out.push("### Répartition par jour", "");
       out.push("| Date | Moyenne | Max | Repos | Faible | Moyen | Élevé | Pendant le sommeil |");
       out.push("|---|---|---|---|---|---|---|---|");
-      for (const d of recent) {
+      for (const d of rows) {
         out.push(`| ${d.date} | ${num(d.stress)} | ${num(d.stressMax)} | ${hm(d.stressRest)} | ${hm(d.stressLow)} | ${hm(d.stressMedium)} | ${hm(d.stressHigh)} | ${num(d.sleepStress)} |`);
-      }
-      if (older.length) {
-        const m = (k) => avg(older.map((d) => d[k]));
-        out.push(`| Moyenne des ${older.length} jours précédents | ${num(m("stress"))} | ${num(m("stressMax"))} | ${hm(m("stressRest"))} | ${hm(m("stressLow"))} | ${hm(m("stressMedium"))} | ${hm(m("stressHigh"))} | ${num(m("sleepStress"))} |`);
       }
       out.push("");
 
-      const withCurve = recent.filter((d) => d.hourly);
-      if (withCurve.length) {
-        const hours = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
-        out.push("### Heure par heure (moyenne de chaque heure, heure locale)", "");
-        out.push(`| Date | ${hours.map((h) => `${h}h`).join(" | ")} |`);
-        out.push(`|---|${hours.map(() => "---").join("|")}|`);
-        for (const d of withCurve) out.push(`| ${d.date} | ${d.hourly.map((v) => num(v)).join(" | ")} |`);
-        const profile = hours.map((_, h) => avg(withCurve.map((d) => d.hourly[h])));
-        out.push(`| **Profil moyen** | ${profile.map((v) => `**${num(v)}**`).join(" | ")} |`);
-        out.push("");
+      for (const d of rows.filter((r) => r.raw)) {
+        out.push(`### Mesures de stress du ${d.date} (heure locale, valeur)`, "", d.raw.join(", "), "");
       }
 
-      const context = recent.filter((d) => d.lifestyle || d.cycle);
+      const context = rows.filter((d) => d.lifestyle || d.cycle);
       if (context.length) {
-        out.push("### Contexte noté dans Garmin", "");
+        out.push("### Journal Garmin", "");
         for (const d of context) {
-          const bits = [d.lifestyle && `journal : ${d.lifestyle}`, d.cycle && `cycle : ${d.cycle}`].filter(Boolean);
+          const bits = [d.lifestyle && `lifestyle : ${d.lifestyle}`, d.cycle && `cycle : ${d.cycle}`].filter(Boolean);
           out.push(`- ${d.date} : ${bits.join(" ; ")}`);
         }
         out.push("");
