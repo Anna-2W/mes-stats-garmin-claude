@@ -59,7 +59,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   if (!csrf) return { error: "Session Garmin introuvable : recharge connect.garmin.com et reconnecte-toi." };
 
   const CONTEXT_DAYS = 28; // journal Lifestyle et cycle : seulement les 28 derniers jours, pour limiter les appels
-  const RAW_STRESS_MAX_DAYS = 7; // mesures de stress toutes les 3 min : ~480 par jour, seulement pour les courtes périodes
+  const RAW_STRESS_DAYS = 90; // mesures de stress toutes les 3 min : seulement les 90 derniers jours (taille du fichier)
   const SPORTS = {
     running: { label: "Course", match: /running/ },
     strength: { label: "Muscu", match: /strength/ },
@@ -155,8 +155,9 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     const text = parts.join(", ");
     return text.length > max ? `${text.slice(0, max)}...` : text;
   };
-  // Mesures brutes de stress de Garmin (toutes les 3 min), avec l'heure locale. -1 et -2 sont les codes Garmin
-  // (pas de mesure, activité), laissés tels quels.
+  // Mesures brutes de stress de Garmin (toutes les 3 min), heure locale. Format compact sans calcul : une ligne
+  // par heure, l'heure de la première mesure puis les valeurs dans l'ordre. Une nouvelle ligne commence aussi
+  // quand Garmin a sauté une mesure, pour ne décaler aucune valeur. -1 et -2 sont les codes Garmin, laissés tels quels.
   const rawStress = (day) => {
     const values = day?.stressValuesArray;
     if (!Array.isArray(values) || !values.length) return null;
@@ -166,10 +167,21 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       const gmt = Date.parse(`${day.startTimestampGMT}Z`);
       if (!Number.isNaN(local - gmt)) offset = local - gmt;
     }
-    return values.map(([ts, v]) => {
+    const lines = [];
+    let line = null;
+    let prevTs = null;
+    for (const [ts, v] of values) {
       const t = new Date(ts + offset);
-      return `${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")} ${v}`;
-    });
+      const newHour = !line || t.getUTCHours() !== line.hour;
+      const gap = prevTs != null && ts - prevTs !== 3 * 60000;
+      if (newHour || gap) {
+        line = { hour: t.getUTCHours(), text: `${String(t.getUTCHours()).padStart(2, "0")}:${String(t.getUTCMinutes()).padStart(2, "0")}` };
+        lines.push(line);
+      }
+      line.text += ` ${v}`;
+      prevTs = ts;
+    }
+    return lines.map((l) => l.text);
   };
 
   let profile;
@@ -320,7 +332,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     let dayDone = 0;
     step(`Journées 0/${days}`);
     const contextDates = new Set(dates.slice(-CONTEXT_DAYS));
-    const wantRawStress = stress && days <= RAW_STRESS_MAX_DAYS;
+    const rawStressDates = new Set(stress ? dates.slice(-RAW_STRESS_DAYS) : []);
     const rows = await inBatches(dates, 4, async (date) => {
       const detailed = contextDates.has(date);
       const [summary, sleep, hrv, readiness, stressDay, lifestyle, cycleDay] = await Promise.all([
@@ -328,7 +340,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
         safe(`/wellness-service/wellness/dailySleepData/${displayName}`, { date, nonSleepBufferMinutes: 60 }),
         safe(`/hrv-service/hrv/${date}`),
         safe(`/metrics-service/metrics/trainingreadiness/${date}`),
-        wantRawStress ? safe(`/wellness-service/wellness/dailyStress/${date}`) : null,
+        rawStressDates.has(date) ? safe(`/wellness-service/wellness/dailyStress/${date}`) : null,
         // Journal « Lifestyle » de l'app Garmin : absent si jamais utilisé, on ne compte pas d'erreur.
         stress && detailed ? api(`/lifestylelogging-service/dailyLog/${date}`).catch(() => null) : null,
         cycle && detailed ? api(`/periodichealth-service/menstrualcycle/dayview/${date}`).catch(() => null) : null,
@@ -384,7 +396,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       out.push("");
 
       for (const d of rows.filter((r) => r.raw)) {
-        out.push(`### Mesures de stress du ${d.date} (heure locale, valeur)`, "", d.raw.join(", "), "");
+        out.push(`### Mesures de stress du ${d.date} (toutes les 3 min, heure locale de la première mesure puis valeurs)`, "", ...d.raw, "");
       }
 
       const context = rows.filter((d) => d.lifestyle || d.cycle);

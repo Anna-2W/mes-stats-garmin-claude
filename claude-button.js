@@ -53,7 +53,7 @@
         </select>
       </label>
       <label class="check"><input type="checkbox" class="details"> Détail de chaque séance (tours, zones, séries)</label>
-      <label class="check"><input type="checkbox" class="stress" checked> Stress détaillé (répartition, mesures toutes les 3 min sur 7 jours max, journal)</label>
+      <label class="check"><input type="checkbox" class="stress" checked> Stress détaillé (répartition, mesures toutes les 3 min sur 90 jours, journal)</label>
       <label class="check"><input type="checkbox" class="cycle"> Cycle menstruel (si suivi dans Garmin)</label>
       <button class="go">Ajouter à la conversation</button>
       <div class="bar" hidden><div></div></div>
