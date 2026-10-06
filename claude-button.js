@@ -17,7 +17,7 @@
                background: #fff; color: #1a1a1a; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
       .panel h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
       .field { display: block; margin-bottom: 8px; color: #555; }
-      .field select, .field input[type="date"] { display: block; width: 100%; margin-top: 3px; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
+      .field select { display: block; width: 100%; margin-top: 3px; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
                background: #fff; color: #1a1a1a; }
       .check { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 10px; color: #1a1a1a; cursor: pointer; }
       .go { width: 100%; padding: 9px; border-radius: 8px; border: 0; background: #0891b2; color: #fff; font-weight: 600; cursor: pointer; }
@@ -34,16 +34,14 @@
                  border-radius: 50%; animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
       .actions { display: flex; gap: 6px; margin-top: 10px; }
-      .field input[type="date"] { cursor: pointer; }
-      .field input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1; cursor: pointer; }
       [hidden] { display: none !important; }
     </style>
     <div class="panel" hidden>
       <h2>Ajouter mes données Garmin</h2>
       <label class="field">Période
         <select class="days"></select>
-        <input type="date" class="since" hidden>
       </label>
+      <div class="since" hidden></div>
       <label class="field">Activités
         <select class="sport">
           <option value="all">Toutes</option>
