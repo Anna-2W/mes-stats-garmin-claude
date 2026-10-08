@@ -1,4 +1,4 @@
-"""Génère les icônes de l'extension et la vignette promo du Chrome Web Store.
+"""Génère les icônes de l'extension (la vignette promo est faite par make_store_images.py, en anglais et en français).
 
 Usage : uv run --with pillow python store/make_images.py
 """
@@ -66,5 +66,4 @@ if __name__ == "__main__":
     icons.mkdir(exist_ok=True)
     for s in (16, 32, 48, 128):
         draw_icon(s).save(icons / f"icon{s}.png")
-    promo_tile().save(ROOT / "store" / "promo-440x280.png")
     print("ok")

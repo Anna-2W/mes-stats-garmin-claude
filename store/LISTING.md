@@ -60,8 +60,8 @@ Projet indépendant, non affilié à Garmin ni à Anthropic. Garmin et Garmin Co
 | Élément | Fichier | Statut |
 |---|---|---|
 | Icône 128x128 | `icons/icon128.png` | prêt |
-| Vignette promo 440x280 | `store/promo-440x280.png` | prêt |
-| Captures d'écran 1280x800 (1 minimum, 5 maximum) | `store/screenshots/1-panneau-1280x800.png` | 1 prête, 1 ou 2 de plus recommandées |
+| Vignette promo 440x280 | `store/en/promo-440x280.png` et `store/fr/promo-440x280.png` | prêt |
+| Captures d'écran 1280x800 (5 maximum) | `store/screenshots/en/` et `store/screenshots/fr/` (1-claude, 2-chatgpt, 3-data, 4-steps, 5-privacy) | prêtes, générées par `store/make_store_images.py` |
 
 **Captures d'écran à prendre** (format 1280x800, sans données que tu ne veux pas montrer) :
 
