@@ -1,11 +1,11 @@
-// Bouton « Garmin » dans claude.ai : récupère les données et les joint au message en cours.
+// Bouton « Garmin » dans claude.ai et chatgpt.com : récupère les données et les joint au message en cours.
 (() => {
   if (document.getElementById("garmin-for-claude")) return;
 
   const host = document.createElement("div");
   host.id = "garmin-for-claude";
   host.style.cssText = "position:fixed;right:20px;bottom:110px;z-index:2147483647";
-  // Shadow DOM : le style de claude.ai ne touche pas au nôtre, et inversement.
+  // Shadow DOM : le style du site ne touche pas au nôtre, et inversement.
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = `
     <style>
@@ -118,6 +118,13 @@
   function attachToComposer(file) {
     const dt = new DataTransfer();
     dt.items.add(file);
+    // ChatGPT : plusieurs champs de fichier cachés (dont un réservé aux images), le collage est plus sûr.
+    const chatgptEditor = location.hostname === "chatgpt.com" && document.querySelector("#prompt-textarea");
+    if (chatgptEditor) {
+      chatgptEditor.focus();
+      chatgptEditor.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+      return true;
+    }
     const input = document.querySelector('input[type="file"]');
     if (input) {
       input.files = dt.files;
