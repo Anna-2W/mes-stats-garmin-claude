@@ -1,4 +1,4 @@
-# Publier Mes Stats Garmin pour l'IA : check-list
+# Publier Mes Stats Garmin pour ChatGPT/Claude : check-list
 
 Ce qui est prêt est coché. Le reste demande ton compte ou ton action.
 

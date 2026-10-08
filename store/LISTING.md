@@ -9,10 +9,10 @@ La fiche existe en deux langues : anglais (langue par défaut) et français.
 
 Le **nom** et le **résumé** viennent du manifeste (`_locales/en` et `_locales/fr`) : rien à saisir.
 
-- Nom : `My Garmin Stats for AI` / `Mes Stats Garmin pour l'IA`
+- Nom : `My Garmin Stats for ChatGPT/Claude` / `Mes Stats Garmin pour ChatGPT/Claude`
 - Résumé : `Add your Garmin Connect stats (activities, sleep, HRV, fitness) to Claude or ChatGPT in one click. 100% local.`
 
-Nom de secours si Google refuse à cause des marques : `My Watch Stats for AI` / `Mes Stats Montre pour l'IA` (dans `_locales/*/messages.json` et `i18n.js`).
+Nom de secours si Google refuse à cause des marques : `My Watch Stats for ChatGPT/Claude` / `Mes Stats Montre pour ChatGPT/Claude` (dans `_locales/*/messages.json` et `i18n.js`).
 
 ### Description en anglais (langue par défaut)
 

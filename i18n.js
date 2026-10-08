@@ -6,7 +6,7 @@ let LANG = DEFAULT_LANG;
 
 const UI_TEXT = {
   en: {
-    appName: "My Garmin Stats for AI",
+    appName: "My Garmin Stats for ChatGPT/Claude",
     panelTitle: "Add my Garmin data",
     fabTitle: "Add my Garmin data to the conversation",
     period: "Period",
@@ -58,7 +58,7 @@ const UI_TEXT = {
     since: "Since {date} ({n} day{s})",
   },
   fr: {
-    appName: "Mes Stats Garmin pour l'IA",
+    appName: "Mes Stats Garmin pour ChatGPT/Claude",
     panelTitle: "Ajouter mes données Garmin",
     fabTitle: "Ajouter mes données Garmin à la conversation",
     period: "Période",
