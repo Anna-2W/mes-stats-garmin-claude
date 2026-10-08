@@ -1,8 +1,8 @@
-# Privacy policy · My Garmin Stats for AI
+# Privacy policy · My Garmin Stats for ChatGPT/Claude
 
 _Last updated: October 8, 2026 (version 1.1.0) · [Version française plus bas](#politique-de-confidentialite)_
 
-My Garmin Stats for AI is a browser extension that adds your Garmin Connect sports data to a Claude or ChatGPT conversation. It was designed to collect nothing.
+My Garmin Stats for ChatGPT/Claude is a browser extension that adds your Garmin Connect sports data to a Claude or ChatGPT conversation. It was designed to collect nothing.
 
 ## What the extension does
 
@@ -45,7 +45,7 @@ For any question or to report a problem: <https://github.com/Anna-2W/mes-stats-g
 
 _Dernière mise à jour : 8 octobre 2026 (version 1.1.0)_
 
-Mes Stats Garmin pour l'IA est une extension de navigateur qui permet d'ajouter tes données sportives Garmin Connect à une conversation Claude ou ChatGPT. Elle a été conçue pour ne rien collecter.
+Mes Stats Garmin pour ChatGPT/Claude est une extension de navigateur qui permet d'ajouter tes données sportives Garmin Connect à une conversation Claude ou ChatGPT. Elle a été conçue pour ne rien collecter.
 
 ## Ce que fait l'extension
 
