@@ -1,4 +1,4 @@
-# Mes Stats Garmin pour Claude
+# Mes Stats Garmin pour l'IA
 
 Extension Chrome qui ajoute tes données Garmin Connect à une conversation Claude en un clic : activités, détail des séances, sommeil, HRV, FC au repos, stress, Body Battery, VO2 max, statut d'entraînement et prédictions de course.
 

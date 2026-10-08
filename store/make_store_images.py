@@ -21,7 +21,7 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 TEXT = {
     "en": {
-        "name": "My Garmin Stats for Claude",
+        "name": "My Garmin Stats for AI",
         "sites": {
             "claude": ("Right inside <em>Claude</em>", "The Garmin button appears in the corner of every chat."),
             "chatgpt": ("And inside <em>ChatGPT</em>", "Same button, same file, one click."),
@@ -70,7 +70,7 @@ TEXT = {
         "promo": ["Your Garmin stats", "in your AI chat."],
     },
     "fr": {
-        "name": "Mes Stats Garmin pour Claude",
+        "name": "Mes Stats Garmin pour l'IA",
         "sites": {
             "claude": ("Directement dans <em>Claude</em>", "Le bouton Garmin apparaît dans le coin de chaque conversation."),
             "chatgpt": ("Et dans <em>ChatGPT</em>", "Même bouton, même fichier, en un clic."),
