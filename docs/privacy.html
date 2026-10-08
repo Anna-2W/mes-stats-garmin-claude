@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Confidentialité · Mes Stats Garmin pour Claude</title>
+<title>Privacy · My Garmin Stats for Claude</title>
 <link rel="icon" href="icon128.png">
 <style>
   body { max-width: 720px; margin: 0 auto; padding: 32px 20px; font: 16px/1.6 system-ui, sans-serif; color: #1f1e1d; background: #faf9f5; }
   h1 { font-size: 1.6em; line-height: 1.25; }
   h2 { margin-top: 2em; font-size: 1.2em; }
+  hr { margin: 3em 0; border: 0; border-top: 1px solid #e5e2da; }
   table { border-collapse: collapse; width: 100%; }
   th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e5e2da; vertical-align: top; }
   code { background: #eee; padding: 1px 4px; border-radius: 4px; }
@@ -16,28 +17,79 @@
 </style>
 </head>
 <body>
-<h1>Politique de confidentialité de Mes Stats Garmin pour Claude</h1>
-<p><em>Dernière mise à jour : 6 octobre 2026</em></p>
-<p>Mes Stats Garmin pour Claude est une extension de navigateur qui permet d'ajouter tes données sportives Garmin Connect à une conversation Claude. Elle a été conçue pour ne rien collecter.</p>
-<h2>Ce que fait l'extension</h2>
+<h1 id="privacy-policy-my-garmin-stats-for-claude">Privacy policy · My Garmin Stats for Claude</h1>
+<p><em>Last updated: October 8, 2026 (version 1.1.0) · <a href="#politique-de-confidentialite">Version française plus bas</a></em></p>
+<p>My Garmin Stats for Claude is a browser extension that adds your Garmin Connect sports data to a Claude or ChatGPT conversation. It was designed to collect nothing.</p>
+<h2 id="what-the-extension-does">What the extension does</h2>
+<p>When you click "Add to conversation" or "Get my data", the extension:</p>
+<ol>
+<li>reads your data from connect.garmin.com, using the session you are already signed in to in your browser;</li>
+<li>formats it as a text file, directly in your browser;</li>
+<li>attaches this file to the message you are writing on claude.ai or chatgpt.com, or lets you copy or download it.</li>
+</ol>
+<h2 id="what-the-extension-does-not-do">What the extension does not do</h2>
+<ul>
+<li>It never asks for or stores your Garmin username or password.</li>
+<li>It sends no data to a developer server: there is none.</li>
+<li>It stores no sports or health data. The only information kept, in your browser only, is <strong>the date of your last export</strong> (for example "2026-10-06"), to offer the "Since my last export" option, and <strong>the language you chose</strong> (English or French). Both are removed if you uninstall the extension.</li>
+<li>It contains no analytics, advertising or tracking.</li>
+<li>It does not sell or share any data with anyone.</li>
+</ul>
+<h2 id="data-processed">Data processed</h2>
+<p>The health and activity data in your Garmin Connect account (activities, heart rate, sleep, HRV, stress, Body Battery, VO2 max, etc.) is read <strong>only when you ask</strong> and <strong>only in your browser</strong>.</p>
+<p>It is sent to one place only: the conversation <strong>you</strong> choose to attach it to. From then on, it is handled by the AI provider under its own privacy policy: Anthropic for Claude (<a href="https://www.anthropic.com/legal/privacy">https://www.anthropic.com/legal/privacy</a>), OpenAI for ChatGPT (<a href="https://openai.com/policies/privacy-policy">https://openai.com/policies/privacy-policy</a>).</p>
+<h2 id="permissions">Permissions</h2>
+<table>
+<thead>
+<tr>
+<th>Permission</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Access to connect.garmin.com</td>
+<td>Read your data from your Garmin Connect session</td>
+</tr>
+<tr>
+<td>Script on claude.ai and chatgpt.com</td>
+<td>Show the "⌚ Garmin" button and attach the file to your message</td>
+</tr>
+<tr>
+<td><code>scripting</code></td>
+<td>Run the data reading in the Garmin Connect tab</td>
+</tr>
+<tr>
+<td><code>storage</code></td>
+<td>Remember the date of your last export and your language, nothing else</td>
+</tr>
+</tbody>
+</table>
+<h2 id="contact">Contact</h2>
+<p>For any question or to report a problem: <a href="https://github.com/Anna-2W/mes-stats-garmin-claude/issues">https://github.com/Anna-2W/mes-stats-garmin-claude/issues</a></p>
+<hr />
+<h1 id="politique-de-confidentialite">Politique de confidentialité</h1>
+<p><em>Dernière mise à jour : 8 octobre 2026 (version 1.1.0)</em></p>
+<p>Mes Stats Garmin pour Claude est une extension de navigateur qui permet d'ajouter tes données sportives Garmin Connect à une conversation Claude ou ChatGPT. Elle a été conçue pour ne rien collecter.</p>
+<h2 id="ce-que-fait-lextension">Ce que fait l'extension</h2>
 <p>Quand tu cliques sur « Ajouter à la conversation » ou « Récupérer mes données », l'extension :</p>
 <ol>
 <li>lit tes données depuis le site connect.garmin.com, en utilisant la session sur laquelle tu es déjà connecté·e dans ton navigateur ;</li>
 <li>les met en forme dans un fichier texte, directement dans ton navigateur ;</li>
-<li>joint ce fichier au message que tu es en train d'écrire sur claude.ai, ou te permet de le copier ou de le télécharger.</li>
+<li>joint ce fichier au message que tu es en train d'écrire sur claude.ai ou chatgpt.com, ou te permet de le copier ou de le télécharger.</li>
 </ol>
-<h2>Ce que l'extension ne fait pas</h2>
+<h2 id="ce-que-lextension-ne-fait-pas">Ce que l'extension ne fait pas</h2>
 <ul>
 <li>Elle ne demande ni ne stocke ton identifiant ou ton mot de passe Garmin.</li>
 <li>Elle n'envoie aucune donnée à un serveur du développeur : il n'en existe pas.</li>
-<li>Elle ne stocke aucune donnée de façon durable (ni stockage local, ni cookies, ni base de données).</li>
+<li>Elle ne stocke aucune donnée sportive ou de santé. Les seules informations conservées, dans ton navigateur uniquement, sont <strong>la date de ton dernier envoi</strong> (par exemple « 2026-10-06 »), pour te proposer l'option « Depuis mon dernier envoi », et <strong>la langue choisie</strong> (anglais ou français). Elles disparaissent si tu désinstalles l'extension.</li>
 <li>Elle ne contient aucun outil de mesure d'audience, de publicité ou de suivi.</li>
 <li>Elle ne vend ni ne partage aucune donnée avec qui que ce soit.</li>
 </ul>
-<h2>Données traitées</h2>
+<h2 id="donnees-traitees">Données traitées</h2>
 <p>Les données de santé et d'activité physique de ton compte Garmin Connect (activités, fréquence cardiaque, sommeil, HRV, stress, Body Battery, VO2 max, etc.) sont lues <strong>uniquement à ta demande</strong> et <strong>uniquement dans ton navigateur</strong>.</p>
-<p>Elles ne sont transmises qu'à un seul endroit : la conversation claude.ai à laquelle <strong>tu</strong> choisis de les joindre. À partir de ce moment, elles sont traitées par Anthropic selon sa propre politique de confidentialité : <a href="https://www.anthropic.com/legal/privacy">https://www.anthropic.com/legal/privacy</a></p>
-<h2>Autorisations demandées</h2>
+<p>Elles ne sont transmises qu'à un seul endroit : la conversation à laquelle <strong>tu</strong> choisis de les joindre. À partir de ce moment, elles sont traitées par le fournisseur de l'IA selon sa propre politique de confidentialité : Anthropic pour Claude (<a href="https://www.anthropic.com/legal/privacy">https://www.anthropic.com/legal/privacy</a>), OpenAI pour ChatGPT (<a href="https://openai.com/policies/privacy-policy">https://openai.com/policies/privacy-policy</a>).</p>
+<h2 id="autorisations-demandees">Autorisations demandées</h2>
 <table>
 <thead>
 <tr>
@@ -51,16 +103,20 @@
 <td>Lire tes données depuis ta session Garmin Connect</td>
 </tr>
 <tr>
-<td>Script sur claude.ai</td>
+<td>Script sur claude.ai et chatgpt.com</td>
 <td>Afficher le bouton « ⌚ Garmin » et joindre le fichier à ton message</td>
 </tr>
 <tr>
 <td><code>scripting</code></td>
 <td>Exécuter la lecture des données dans l'onglet Garmin Connect</td>
 </tr>
+<tr>
+<td><code>storage</code></td>
+<td>Retenir la date de ton dernier envoi et la langue choisie, rien d'autre</td>
+</tr>
 </tbody>
 </table>
-<h2>Contact</h2>
+<h2 id="contact_1">Contact</h2>
 <p>Pour toute question ou pour signaler un problème : <a href="https://github.com/Anna-2W/mes-stats-garmin-claude/issues">https://github.com/Anna-2W/mes-stats-garmin-claude/issues</a></p>
 </body>
 </html>
