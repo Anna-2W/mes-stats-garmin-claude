@@ -1,31 +1,65 @@
-# Fiche Chrome Web Store : textes à copier-coller
+# Fiche Chrome Web Store : textes à copier-coller (version 1.1.0)
 
 Tout ce que le formulaire du Chrome Web Store demande, dans l'ordre des onglets du tableau de bord développeur.
+La fiche existe en deux langues : anglais (langue par défaut) et français.
 
 ---
 
 ## Onglet « Fiche Play Store » (Store listing)
 
-**Nom** (vient du manifeste) : `Mes Stats Garmin pour Claude`
+Le **nom** et le **résumé** viennent du manifeste (`_locales/en` et `_locales/fr`) : rien à saisir.
 
-Nom de secours si Google refuse à cause des marques : `Mes Stats Montre` (à changer dans `manifest.json`, `popup.html`, puis relancer `scripts/package.sh` et `store/make_images.py`).
+- Nom : `My Garmin Stats for Claude` / `Mes Stats Garmin pour Claude`
+- Résumé : `Add your Garmin Connect stats (activities, sleep, HRV, fitness) to Claude or ChatGPT in one click. 100% local.`
 
-**Résumé** (132 caractères max, vient du manifeste) :
+Nom de secours si Google refuse à cause des marques : `My Watch Stats` / `Mes Stats Montre` (dans `_locales/*/messages.json` et `i18n.js`).
 
-```
-Ajoute tes stats Garmin Connect (activités, sommeil, HRV, forme) à une conversation Claude en un clic. 100 % local.
-```
-
-**Description détaillée** :
+### Description en anglais (langue par défaut)
 
 ```
-Donne à Claude toutes tes données d'entraînement en un clic, pour analyser ta forme, ta récupération et préparer tes plans.
+Give your AI all your training data in one click, to analyze your fitness and recovery and plan your training.
+
+HOW IT WORKS
+1. Sign in to Garmin Connect in your browser, as usual.
+2. Open a conversation on claude.ai or chatgpt.com.
+3. Click the "⌚ Garmin" button, pick a period and a sport.
+4. The file is attached to your message. Ask your question.
+
+WHAT'S INCLUDED
+• Fitness status: VO2 max, training status, acute and chronic load, 5K, 10K, half marathon and marathon predictions
+• Activities: distance, duration, pace, average and max HR, elevation gain, training effect, load
+• Session details (optional): laps and intervals, HR zones, cadence, stride, power, weather, strength sets
+• Days: bedtime and wake-up time, sleep and sleep stages, HRV, resting HR, Body Battery, readiness, steps
+• Stress: rest / low / medium / high breakdown, readings every 3 minutes
+• Only Garmin's own numbers, no averages or interpretation added
+• From 1 day to 1 year, or only the new data since your last export
+• Filter by sport (running, strength, cycling, swimming, walking)
+• English or French, switch anytime
+
+100% LOCAL AND FREE
+• No account, no password: the extension uses your existing Garmin Connect session.
+• No server: your data only goes through your browser, then to the conversation you choose.
+• No tracking, no ads, no sports data stored.
+• Open source.
+
+EXAMPLE QUESTIONS
+• "Am I recovered enough for an interval session tomorrow?"
+• "Has my zone 2 pace improved over the last 3 months?"
+• "Build me an 8-week plan for my next 10K."
+
+Independent project, not affiliated with Garmin, Anthropic or OpenAI. Garmin and Garmin Connect are trademarks of Garmin Ltd. Claude is a trademark of Anthropic. ChatGPT is a trademark of OpenAI.
+```
+
+### Description en français
+
+```
+Donne à ton IA toutes tes données d'entraînement en un clic, pour analyser ta forme, ta récupération et préparer tes plans.
 
 COMMENT ÇA MARCHE
 1. Connecte-toi à Garmin Connect dans ton navigateur, comme d'habitude.
-2. Ouvre une conversation sur claude.ai.
+2. Ouvre une conversation sur claude.ai ou chatgpt.com.
 3. Clique sur le bouton « ⌚ Garmin », choisis la période et le sport.
-4. Le fichier est joint à ton message. Pose ta question à Claude.
+4. Le fichier est joint à ton message. Pose ta question.
 
 CE QUI EST INCLUS
 • État de forme : VO2 max, statut d'entraînement, charge aiguë et chronique, prédictions 5 km, 10 km, semi et marathon
@@ -36,10 +70,11 @@ CE QUI EST INCLUS
 • Uniquement les chiffres de Garmin, sans moyenne ni interprétation ajoutée
 • De 1 jour à 1 an, ou seulement les nouvelles données depuis ton dernier envoi
 • Filtrable par sport (course, muscu, vélo, natation, marche)
+• En anglais ou en français, au choix
 
 100 % LOCAL ET GRATUIT
 • Aucun compte à créer, aucun mot de passe demandé : l'extension utilise ta session Garmin Connect déjà ouverte.
-• Aucun serveur : tes données ne passent que par ton navigateur, puis par la conversation Claude que tu choisis.
+• Aucun serveur : tes données ne passent que par ton navigateur, puis par la conversation que tu choisis.
 • Aucun suivi, aucune publicité, aucune donnée sportive stockée.
 • Code source ouvert.
 
@@ -48,28 +83,23 @@ EXEMPLES DE QUESTIONS
 • « Mon allure en zone 2 progresse-t-elle depuis 3 mois ? »
 • « Prépare-moi un plan de 8 semaines pour mon prochain 10 km. »
 
-Projet indépendant, non affilié à Garmin ni à Anthropic. Garmin et Garmin Connect sont des marques de Garmin Ltd. Claude est une marque d'Anthropic.
+Projet indépendant, non affilié à Garmin, Anthropic ni OpenAI. Garmin et Garmin Connect sont des marques de Garmin Ltd. Claude est une marque d'Anthropic. ChatGPT est une marque d'OpenAI.
 ```
 
 **Catégorie** : `Productivité` (ou `Santé et remise en forme` si la catégorie est proposée)
 
-**Langue** : Français
+### Images
 
-**Images** :
+Les mêmes fichiers existent en anglais (`en`) et en français (`fr`), générés par `store/make_store_images.py`.
 
-| Élément | Fichier | Statut |
+| Élément | Anglais | Français |
 |---|---|---|
-| Icône 128x128 | `icons/icon128.png` | prêt |
-| Vignette promo 440x280 | `store/en/promo-440x280.png` et `store/fr/promo-440x280.png` | prêt |
-| Captures d'écran 1280x800 (5 maximum) | `store/screenshots/en/` et `store/screenshots/fr/` (1-claude, 2-chatgpt, 3-file, 4-features, 5-privacy) | prêtes, générées par `store/make_store_images.py` |
+| Icône 128x128 | `icons/icon128.png` | même fichier |
+| Vignette promo 440x280 | `store/en/promo-440x280.png` | `store/fr/promo-440x280.png` |
+| Bannière 1400x560 | `store/en/banniere-1400x560.png` | `store/fr/banniere-1400x560.png` |
+| Captures 1280x800 (5 maximum) | `store/screenshots/en/` | `store/screenshots/fr/` |
 
-**Captures d'écran à prendre** (format 1280x800, sans données que tu ne veux pas montrer) :
-
-1. claude.ai avec le panneau « ⌚ Garmin » ouvert
-2. Un message avec le fichier joint et la réponse de Claude
-3. La fenêtre de l'icône avec l'aperçu du texte
-
-Astuce : fenêtre Chrome redimensionnée à 1280x800, puis Cmd+Maj+4 puis Espace pour capturer la fenêtre.
+Ordre des captures : 1-claude, 2-chatgpt, 3-file, 4-features, 5-privacy.
 
 **Site web** : `https://github.com/Anna-2W/mes-stats-garmin-claude`
 **URL d'assistance** : `https://github.com/Anna-2W/mes-stats-garmin-claude/issues`
@@ -81,7 +111,7 @@ Astuce : fenêtre Chrome redimensionnée à 1280x800, puis Cmd+Maj+4 puis Espace
 **Objectif unique** (Single purpose) :
 
 ```
-Exporter les données sportives et de santé de l'utilisateur depuis sa session Garmin Connect et les joindre, à sa demande, à une conversation claude.ai.
+Exporter les données sportives et de santé de l'utilisateur depuis sa session Garmin Connect et les joindre, à sa demande, à une conversation claude.ai ou chatgpt.com.
 ```
 
 **Justification des autorisations** :
@@ -96,12 +126,12 @@ Autorisation d'hôte `https://connect.garmin.com/*` :
 Nécessaire pour lire les données de l'utilisateur (activités, sommeil, fréquence cardiaque, etc.) depuis sa propre session Garmin Connect. Aucune autre donnée de ce site n'est lue.
 ```
 
-Script de contenu sur `https://claude.ai/*` :
+Scripts de contenu sur `https://claude.ai/*` et `https://chatgpt.com/*` :
 ```
-Affiche le bouton « ⌚ Garmin » dans claude.ai et joint le fichier de données au message que l'utilisateur est en train d'écrire. Le script ne lit pas les conversations.
+Affiche le bouton « ⌚ Garmin » dans claude.ai et chatgpt.com et joint le fichier de données au message que l'utilisateur est en train d'écrire. Le script ne lit pas les conversations.
 ```
 
-`storage` (à ajouter lors de l'envoi de la 1.1.0) :
+`storage` (nouvelle dans la 1.1.0) :
 ```
 Conserve uniquement, en local, la date du dernier envoi de l'utilisateur (pour l'option « Depuis mon dernier envoi ») et la langue d'affichage choisie (anglais ou français). Aucune donnée sportive ou de santé n'est stockée.
 ```
@@ -121,6 +151,6 @@ Cocher les trois attestations :
 
 ## Onglet « Distribution »
 
-- **Visibilité** : Public (ou « Non répertorié » pour un premier test avec des amis : installable par lien, invisible dans les recherches)
+- **Visibilité** : Public (ou « Non répertorié » : installable par lien, invisible dans les recherches)
 - **Régions** : toutes
 - **Tarif** : gratuit

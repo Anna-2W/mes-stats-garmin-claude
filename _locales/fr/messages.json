@@ -4,7 +4,7 @@
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Ajoute tes stats Garmin Connect (activités, sommeil, HRV, forme) à une conversation Claude en un clic. 100 % local.",
+    "message": "Ajoute tes stats Garmin Connect (activités, sommeil, HRV, forme) à Claude ou ChatGPT en un clic. 100 % local.",
     "description": "Extension description (132 characters max)"
   }
 }
