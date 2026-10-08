@@ -1,273 +1,379 @@
 """Toutes les images du Chrome Web Store, en anglais et en français.
 
+Chaque image est une petite page HTML rendue par Chrome en mode headless : texte net, vraies polices,
+panneau de l'extension recréé avec son propre style. Les chiffres affichés sont des exemples inventés.
+
 Usage : uv run --no-project --with pillow python store/make_store_images.py
 Sortie : store/screenshots/<lang>/1 à 5 (1280x800), store/<lang>/banniere-1400x560.png et promo-440x280.png.
-Les captures 1 et 2 partent de vraies captures d'écran (store/screenshots/raw-<site>-<lang>.png),
-les chiffres de la capture 3 sont des exemples inventés.
 """
+import html
+import subprocess
+import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image
 
-from make_images import CREAM, LAGOON_DEEP, LAGOON_LIGHT, WHITE, draw_icon, font
-from make_screenshot import with_shadow
+from make_images import draw_icon
 
 HERE = Path(__file__).resolve().parent
-RAW = HERE / "screenshots"
-INK = (31, 30, 29)
-MUTED = (95, 110, 115)
-CARD = (255, 255, 255)
-LINE = (226, 232, 234)
+CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 TEXT = {
     "en": {
-        "claude": ("In Claude", "The Garmin button appears right in the chat"),
-        "chatgpt": ("And in ChatGPT", "Same button, same file, one click"),
-        "data_title": ("All your stats, neatly organized", "A clear file your AI reads in full (sample data)"),
-        "fitness": "Current fitness status",
-        "facts": [
-            "Running VO2 max: 48.2",
-            "Training status: PRODUCTIVE",
-            "Acute load (7 d): 412, chronic (28 d): 380, ratio: 1.08",
-            "Race predictions: 5 km 24:10, 10 km 50:45, half 1h53:20",
+        "name": "My Garmin Stats for Claude",
+        "tagline": "Your Garmin stats in Claude and ChatGPT, in one click. 100% local.",
+        "free": "Free Chrome extension",
+        "hero_title": "Your Garmin stats, <em>right in your AI chat</em>",
+        "hero_lead": "One click adds your activities, sleep, HRV and stress to the conversation.",
+        "chips": ["Claude", "ChatGPT", "100% local"],
+        "ask": "Ask anything",
+        "file_eyebrow": "What your AI receives",
+        "file_title": "A clean file, <em>pure Garmin data</em>",
+        "file_lead": "No summaries, no guesses: the exact numbers from Garmin Connect, ready to analyze.",
+        "question": "How did my training go this month? Am I recovering well?",
+        "doc": {
+            "acts": "Activities", "days": "Days",
+            "act_cols": ["Date", "Type", "Distance", "Pace", "Avg HR", "Load"],
+            "day_cols": ["Date", "Bedtime", "Wake-up", "Sleep", "HRV", "Stress"],
+        },
+        "all_title": "Everything Garmin knows, <em>in one file</em>",
+        "features": [
+            ("activity", "Activities", "Distance, pace, heart rate, training effect, load"),
+            ("laps", "Session details", "Laps, HR zones, running dynamics, strength sets"),
+            ("moon", "Sleep", "Bedtime, wake-up, deep and REM sleep, sleep score"),
+            ("heart", "HRV and resting HR", "Overnight HRV, HRV status, resting heart rate"),
+            ("zap", "Stress", "Daily breakdown and readings every 3 minutes"),
+            ("battery", "Body Battery", "Daily high and low, training readiness"),
+            ("trend", "Fitness", "VO2 max, training status, race predictions"),
+            ("calendar", "Any period", "From today to a full year, filter by sport"),
         ],
-        "activities": "Activities",
-        "cols": ["Date", "Type", "Distance", "Duration", "Pace", "Avg HR", "Elev.", "Load"],
-        "steps_title": ("How it works", "No account, no password, no complicated setup"),
+        "steps_title": "Ready in <em>3 steps</em>",
         "steps": [
-            ("Sign in", ["to Garmin Connect", "in your browser,", "as usual."]),
-            ("Click", ["the Garmin button", "in Claude or ChatGPT,", "pick period and sport."]),
-            ("Ask away", ["The file is attached", "to your message.", "Your AI analyzes it all."]),
+            ("Sign in", "to Garmin Connect in your browser, as usual."),
+            ("Click", "the Garmin button in Claude or ChatGPT, pick a period."),
+            ("Ask", "The file is attached to your message. Your AI analyzes it all."),
         ],
-        "privacy_title": ("100% local, 0 servers", "Your data only goes through your browser"),
-        "flow": [
-            ("Garmin Connect", "your existing session"),
-            ("Your browser", "builds the file"),
-            ("Your chat", "when you decide"),
-        ],
-        "promises": ["No password requested", "No sports data stored", "No tracking, no ads", "Open source code"],
-        "name": ("My Garmin Stats", "for Claude"),
-        "tagline": "Your sports stats in Claude and ChatGPT, in one click. 100% local.",
-        "promo": ("My Garmin", "Stats", ["Your sports stats in your AI,", "in one click. 100% local."]),
+        "privacy_title": "100% local. <em>Nothing leaves your browser.</em>",
+        "promises": ["No password requested", "No server, no account", "No sports data stored", "No tracking, no ads", "Open source on GitHub"],
+        "flow": ["Garmin Connect", "Your browser", "Your AI chat"],
+        "panel": {
+            "title": "Add my Garmin data", "period": "Period", "period_value": "Last 4 weeks",
+            "activities": "Activities", "all": "All",
+            "checks": [("Details of each session (laps, zones, sets)", True), ("Detailed stress (breakdown, 3-min readings over 90 days, journal)", True), ("Menstrual cycle (if tracked in Garmin)", False)],
+            "go": "Add to conversation",
+        },
+        "promo": ["Your Garmin stats", "in your AI chat."],
     },
     "fr": {
-        "claude": ("Dans Claude", "Le bouton Garmin apparaît directement dans le chat"),
-        "chatgpt": ("Et dans ChatGPT", "Même bouton, même fichier, en un clic"),
-        "data_title": ("Toutes tes stats, bien rangées", "Un fichier clair que ton IA lit en entier (exemple de données)"),
-        "fitness": "État de forme actuel",
-        "facts": [
-            "VO2 max course : 48.2",
-            "Statut d'entraînement : PRODUCTIVE",
-            "Charge aiguë (7 j) : 412, chronique (28 j) : 380, ratio : 1.08",
-            "Prédictions : 5 km 24:10, 10 km 50:45, semi 1h53:20",
+        "name": "Mes Stats Garmin pour Claude",
+        "tagline": "Tes stats Garmin dans Claude et ChatGPT, en un clic. 100 % local.",
+        "free": "Extension Chrome gratuite",
+        "hero_title": "Tes stats Garmin, <em>directement dans ton chat IA</em>",
+        "hero_lead": "Un clic ajoute tes activités, ton sommeil, ta HRV et ton stress à la conversation.",
+        "chips": ["Claude", "ChatGPT", "100 % local"],
+        "ask": "Pose ta question",
+        "file_eyebrow": "Ce que reçoit ton IA",
+        "file_title": "Un fichier clair, <em>que des données Garmin</em>",
+        "file_lead": "Aucun résumé, aucune supposition : les chiffres exacts de Garmin Connect, prêts à être analysés.",
+        "question": "Comment s'est passé mon entraînement ce mois-ci ? Je récupère bien ?",
+        "doc": {
+            "acts": "Activités", "days": "Journées",
+            "act_cols": ["Date", "Type", "Distance", "Allure", "FC moy", "Charge"],
+            "day_cols": ["Date", "Coucher", "Réveil", "Sommeil", "HRV", "Stress"],
+        },
+        "all_title": "Tout ce que Garmin sait, <em>dans un seul fichier</em>",
+        "features": [
+            ("activity", "Activités", "Distance, allure, fréquence cardiaque, effet, charge"),
+            ("laps", "Détail des séances", "Tours, zones cardio, dynamique de course, séries"),
+            ("moon", "Sommeil", "Coucher, réveil, sommeil profond et REM, score"),
+            ("heart", "HRV et FC repos", "HRV de la nuit, statut HRV, FC au repos"),
+            ("zap", "Stress", "Répartition par jour et mesures toutes les 3 minutes"),
+            ("battery", "Body Battery", "Max et min du jour, disposition à l'entraînement"),
+            ("trend", "Forme", "VO2 max, statut d'entraînement, prédictions de course"),
+            ("calendar", "Toute période", "D'aujourd'hui à un an, filtre par sport"),
         ],
-        "activities": "Activités",
-        "cols": ["Date", "Type", "Distance", "Durée", "Allure", "FC moy", "D+", "Charge"],
-        "steps_title": ("Comment ça marche", "Aucun compte, aucun mot de passe, aucune installation compliquée"),
+        "steps_title": "Prêt en <em>3 étapes</em>",
         "steps": [
-            ("Connecte-toi", ["à Garmin Connect", "dans ton navigateur,", "comme d'habitude."]),
-            ("Clique", ["sur le bouton Garmin", "dans Claude ou ChatGPT,", "choisis période et sport."]),
-            ("Pose ta question", ["Le fichier est joint", "à ton message.", "Ton IA analyse tout."]),
+            ("Connecte-toi", "à Garmin Connect dans ton navigateur, comme d'habitude."),
+            ("Clique", "sur le bouton Garmin dans Claude ou ChatGPT, choisis la période."),
+            ("Demande", "Le fichier est joint à ton message. Ton IA analyse tout."),
         ],
-        "privacy_title": ("100 % local, 0 serveur", "Tes données ne passent que par ton navigateur"),
-        "flow": [
-            ("Garmin Connect", "ta session déjà ouverte"),
-            ("Ton navigateur", "mise en forme du fichier"),
-            ("Ta conversation", "quand tu le décides"),
-        ],
-        "promises": ["Aucun mot de passe demandé", "Aucune donnée sportive stockée", "Aucun suivi, aucune pub", "Code source ouvert"],
-        "name": ("Mes Stats Garmin", "pour Claude"),
-        "tagline": "Tes stats sportives dans Claude et ChatGPT, en un clic. 100 % local.",
-        "promo": ("Mes Stats", "Garmin", ["Tes stats sportives dans ton IA,", "en un clic. 100 % local."]),
+        "privacy_title": "100 % local. <em>Rien ne quitte ton navigateur.</em>",
+        "promises": ["Aucun mot de passe demandé", "Aucun serveur, aucun compte", "Aucune donnée sportive stockée", "Aucun suivi, aucune pub", "Code source ouvert sur GitHub"],
+        "flow": ["Garmin Connect", "Ton navigateur", "Ton chat IA"],
+        "panel": {
+            "title": "Ajouter mes données Garmin", "period": "Période", "period_value": "4 dernières semaines",
+            "activities": "Activités", "all": "Toutes",
+            "checks": [("Détail de chaque séance (tours, zones, séries)", True), ("Stress détaillé (répartition, mesures toutes les 3 min sur 90 jours, journal)", True), ("Cycle menstruel (si suivi dans Garmin)", False)],
+            "go": "Ajouter à la conversation",
+        },
+        "promo": ["Tes stats Garmin", "dans ton chat IA."],
     },
 }
 
-# Captures réelles : zone à masquer (prénom affiché par le site) et couleur de fond du site.
-SITES = {
-    "claude-en": ((590, 340, 1150, 460), (21, 21, 21)),
-    "claude-fr": ((590, 290, 1140, 400), (21, 21, 21)),
-    "chatgpt-en": (None, (0, 0, 0)),
-    "chatgpt-fr": (None, (0, 0, 0)),
+# Icônes au trait (24x24), dessinées à la main dans l'esprit de Lucide.
+ICONS = {
+    "activity": '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+    "laps": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
+    "moon": '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+    "heart": '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/>',
+    "zap": '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>',
+    "battery": '<rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2M6 11v2M10 11v2"/>',
+    "trend": '<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+    "calendar": '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    "check": '<path d="M20 6 9 17l-5-5"/>',
+    "lock": '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    "file": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
+    "arrow": '<path d="M5 12h14M13 6l6 6-6 6"/>',
 }
 
 
-def lagoon(w: int, h: int) -> Image.Image:
-    img = Image.new("RGB", (w, h))
-    d = ImageDraw.Draw(img)
-    for i in range(w + h):
-        t = i / (w + h - 1)
-        d.line([(i, 0), (i - h, h)], fill=tuple(round(a + (b - a) * t) for a, b in zip(LAGOON_LIGHT, LAGOON_DEEP)), width=2)
-    return img
+def icon(name: str, size=24, stroke="currentColor", width=2) -> str:
+    return (f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{stroke}" '
+            f'stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round">{ICONS[name]}</svg>')
 
 
-def fit(d: ImageDraw.ImageDraw, text: str, size: int, max_width: int, bold=False):
-    """Police la plus grande (jusqu'à size) pour que text tienne dans max_width."""
-    while size > 10 and d.textlength(text, font=font(size, bold)) > max_width:
-        size -= 1
-    return font(size, bold)
+BASE_CSS = """
+* { box-sizing: border-box; }
+html, body { margin: 0; width: %(w)dpx; height: %(h)dpx; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  color: #0b1f26; -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(900px 620px at 88%% 12%%, rgba(94,224,216,.42), transparent 62%%),
+    radial-gradient(760px 520px at 0%% 100%%, rgba(8,145,178,.20), transparent 60%%),
+    #f3f8f9;
+}
+em { font-style: normal; color: #0891b2; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+  background: rgba(8,145,178,.10); color: #0e7490; font-size: 15px; font-weight: 650; letter-spacing: .01em; }
+h1 { margin: 20px 0 18px; font-size: 54px; line-height: 1.06; letter-spacing: -.025em; font-weight: 800; }
+.lead { margin: 0; font-size: 21px; line-height: 1.5; color: #46616a; }
+.card { background: #fff; border-radius: 22px; box-shadow: 0 1px 2px rgba(11,31,38,.06), 0 24px 60px -18px rgba(11,31,38,.22); }
+.chips { display: flex; gap: 10px; margin-top: 30px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 999px; background: #fff;
+  font-size: 16px; font-weight: 600; box-shadow: 0 1px 2px rgba(11,31,38,.08), 0 8px 20px -10px rgba(11,31,38,.25); }
+.chip svg { color: #0891b2; }
+
+/* Panneau de l'extension, mêmes règles que claude-button.js */
+.panel { width: 280px; padding: 14px; border-radius: 12px; background: #fff; color: #1a1a1a;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25); font: 13px/1.4 system-ui, -apple-system, sans-serif; }
+.panel .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.panel h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.panel .lang { display: flex; border: 1px solid #ddd; border-radius: 999px; overflow: hidden; }
+.panel .lang span { padding: 2px 8px; font-size: 11px; font-weight: 600; color: #555; }
+.panel .lang .on { background: #0891b2; color: #fff; }
+.panel .field { margin-bottom: 8px; color: #555; }
+.panel .select { margin-top: 3px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px; color: #1a1a1a;
+  display: flex; justify-content: space-between; }
+.panel .check { display: flex; gap: 7px; align-items: flex-start; margin: 4px 0 10px; }
+.panel .box { flex: none; width: 14px; height: 14px; margin-top: 2px; border-radius: 3px; border: 1.5px solid #888; }
+.panel .box.on { background: #0891b2; border-color: #0891b2; position: relative; }
+.panel .box.on::after { content: ""; position: absolute; left: 3.5px; top: 0.5px; width: 4px; height: 8px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.panel .go { padding: 9px; border-radius: 8px; background: #0891b2; color: #fff; font-weight: 600; text-align: center; }
+.fab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: #0891b2;
+  color: #fff; font: 600 13px system-ui, -apple-system, sans-serif; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+"""
 
 
-def card(d: ImageDraw.ImageDraw, box, radius=24):
-    x0, y0, x1, y1 = box
-    d.rounded_rectangle((x0 + 6, y0 + 10, x1 + 6, y1 + 10), radius=radius, fill=(6, 110, 135))  # ombre simple
-    d.rounded_rectangle(box, radius=radius, fill=CARD)
+def panel(lang: str) -> str:
+    P = TEXT[lang]["panel"]
+    e = html.escape
+    checks = "".join(f'<div class="check"><span class="box{" on" if on else ""}"></span>{e(t)}</div>' for t, on in P["checks"])
+    en, fr = ("on", "") if lang == "en" else ("", "on")
+    return f"""
+<div class="panel">
+  <div class="head"><h2>{e(P["title"])}</h2><div class="lang"><span class="{en}">EN</span><span class="{fr}">FR</span></div></div>
+  <div class="field">{e(P["period"])}<div class="select"><span>{e(P["period_value"])}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:3px"><path d="m6 9 6 6 6-6"/></svg></div></div>
+  <div class="field">{e(P["activities"])}<div class="select"><span>{e(P["all"])}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-top:3px"><path d="m6 9 6 6 6-6"/></svg></div></div>
+  {checks}
+  <div class="go">{e(P["go"])}</div>
+</div>"""
 
 
-def title(d, text, sub=None):
-    d.text((80, 60), text, font=fit(d, text, 46, 1120, bold=True), fill=WHITE)
-    if sub:
-        d.text((80, 120), sub, font=fit(d, sub, 24, 1120), fill=WHITE)
+def chat_window(lang: str, inner: str, w: int, h: int) -> str:
+    """Fenêtre de chat sombre et neutre (aucune marque) où apparaît le bouton Garmin."""
+    return f"""
+<div style="position:relative;width:{w}px;height:{h}px;border-radius:20px;background:#1c1c1b;overflow:hidden;
+  box-shadow:0 30px 80px -20px rgba(11,31,38,.45)">
+  <div style="display:flex;gap:8px;padding:16px 18px">
+    <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span>
+    <span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span>
+    <span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+  </div>
+  <div style="position:absolute;left:36px;right:36px;top:46%;height:96px;border-radius:18px;background:#2a2a28;
+    border:1px solid #3a3a37;padding:18px 22px;color:#8d8d86;font-size:18px">{html.escape(TEXT[lang]["ask"])}</div>
+  {inner}
+</div>"""
 
 
-def screenshot_site(site: str, lang: str) -> Image.Image:
-    """Vraie capture du site, recadrée sur la zone de message et le panneau pour rester nette."""
-    heading, sub = TEXT[lang][site]
-    img = lagoon(1280, 800)
-    d = ImageDraw.Draw(img)
-    d.text((640, 52), heading, font=fit(d, heading, 42, 1180, bold=True), fill=WHITE, anchor="mm")
-    d.text((640, 96), sub, font=fit(d, sub, 24, 1180), fill=WHITE, anchor="mm")
-
-    hide, bg = SITES[f"{site}-{lang}"]
-    shot = Image.open(RAW / f"raw-{site}-{lang}.png").convert("RGB")
-    if hide:
-        ImageDraw.Draw(shot).rectangle(hide, fill=bg)
-    # Haut du panneau : première ligne blanche près du bord droit.
-    W, H = shot.size
-    top = next(y for y in range(H) if sum(shot.getpixel((W - 250, y))) > 720)
-    box_w, box_h = 1200, 640
-    crop_h = min(880, H)
-    crop_w = round(crop_h * box_w / box_h)
-    y0 = max(0, min(top - 40, H - crop_h))
-    shot = shot.crop((max(0, W - crop_w), y0, W, y0 + crop_h))
-    scale = min(box_w / shot.width, box_h / shot.height)
-    shot = shot.resize((round(shot.width * scale), round(shot.height * scale)), Image.LANCZOS)
-    shot = shot.filter(ImageFilter.UnsharpMask(radius=1.2, percent=70, threshold=2))
-    # Le bord gauche coupe la page du site : on le fond dans la couleur du site pour que ça ne fasse pas « coupé ».
-    fade = 220
-    ramp = Image.linear_gradient("L").rotate(-90).resize((fade, shot.height))  # 255 à gauche, 0 à droite
-    shot.paste(Image.new("RGB", (fade, shot.height), bg), (0, 0), ramp)
-    shot = shot.convert("RGBA")
-    mask = Image.new("L", shot.size, 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, shot.width - 1, shot.height - 1), radius=20, fill=255)
-    shot.putalpha(mask)
-    with_shadow(shot, img, ((1280 - shot.width) // 2, 130 + (box_h - shot.height) // 2))
-    return img
+def page(w: int, h: int, body: str) -> str:
+    return f"<!doctype html><meta charset='utf-8'><style>{BASE_CSS % {'w': w, 'h': h}}</style><body>{body}</body>"
 
 
-def screenshot_data(lang: str) -> Image.Image:
-    """Aperçu du fichier envoyé à l'IA."""
+def hero(lang: str) -> str:
     T = TEXT[lang]
-    img = lagoon(1280, 800)
-    d = ImageDraw.Draw(img)
-    title(d, *T["data_title"])
-    card(d, (80, 190, 1200, 740))
-    x, y = 120, 220
-    d.text((x, y), T["fitness"], font=font(26, bold=True), fill=INK)
-    for i, f in enumerate(T["facts"]):
-        d.text((x + 10, y + 44 + i * 32), f"•  {f}", font=font(20), fill=INK)
-
-    y = 430
-    d.text((x, y), T["activities"], font=font(26, bold=True), fill=INK)
-    xs = [120, 290, 450, 580, 700, 830, 950, 1050]
-    rows = [
-        ["2026-09-28", "running", "10.02", "52:31", "5:14 /km", "148", "84", "121"],
-        ["2026-09-30", "strength", "-", "45:10", "-", "96", "-", "12"],
-        ["2026-10-02", "running", "6.40", "31:05", "4:51 /km", "162", "22", "143"],
-        ["2026-10-04", "cycling", "42.5", "1h28:40", "28.8 km/h", "131", "410", "98"],
-    ]
-    d.rectangle((110, y + 46, 1170, y + 84), fill=(236, 248, 250))
-    for cx, c in zip(xs, T["cols"]):
-        d.text((cx, y + 54), c, font=font(19, bold=True), fill=LAGOON_DEEP)
-    for r, row in enumerate(rows):
-        ry = y + 96 + r * 44
-        d.line((110, ry - 6, 1170, ry - 6), fill=LINE, width=1)
-        for cx, v in zip(xs, row):
-            d.text((cx, ry + 4), v, font=font(19), fill=INK)
-    return img
+    chips = "".join(f'<span class="chip">{icon("check", 18, width=3)}{html.escape(c)}</span>' for c in T["chips"])
+    inner = f"""
+  <div style="position:absolute;right:28px;bottom:92px;zoom:1.3">{panel(lang)}</div>
+  <div style="position:absolute;right:28px;bottom:26px;zoom:1.3"><span class="fab">⌚ Garmin</span></div>"""
+    return page(1280, 800, f"""
+<div style="display:flex;align-items:center;gap:48px;height:100%;padding:0 50px 0 80px">
+  <div style="width:500px;flex:none">
+    <span class="eyebrow">{html.escape(T["free"])}</span>
+    <h1>{T["hero_title"]}</h1>
+    <p class="lead">{html.escape(T["hero_lead"])}</p>
+    <div class="chips">{chips}</div>
+  </div>
+  {chat_window(lang, inner, 602, 720)}
+</div>""")
 
 
-def screenshot_steps(lang: str) -> Image.Image:
-    """Comment ça marche, en 3 étapes."""
+def file_shot(lang: str) -> str:
     T = TEXT[lang]
-    img = lagoon(1280, 800)
-    d = ImageDraw.Draw(img)
-    title(d, *T["steps_title"])
-    w, gap = 340, 30
-    for i, (head, lines) in enumerate(T["steps"]):
-        x0 = 80 + i * (w + gap)
-        card(d, (x0, 230, x0 + w, 690))
-        d.ellipse((x0 + 40, 270, x0 + 130, 360), fill=LAGOON_DEEP)
-        d.text((x0 + 85, 315), str(i + 1), font=font(48, bold=True), fill=WHITE, anchor="mm")
-        d.text((x0 + 40, 400), head, font=fit(d, head, 32, w - 60, bold=True), fill=INK)
-        for j, line in enumerate(lines):
-            d.text((x0 + 40, 460 + j * 40), line, font=fit(d, line, 24, w - 60), fill=MUTED)
-    return img
+    D = T["doc"]
+    acts = [["09-28", "running", "10.02", "5:14 /km", "148", "121"], ["09-30", "strength", "-", "-", "96", "12"],
+            ["10-02", "running", "6.40", "4:51 /km", "162", "143"], ["10-04", "cycling", "42.5", "28.8 km/h", "131", "98"]]
+    days = [["10-02", "23:12", "06:58", "7h46", "62", "21"], ["10-03", "00:41", "06:20", "5h39", "48", "34"],
+            ["10-04", "22:55", "07:10", "8h15", "66", "19"]]
+
+    def table(cols, rows):
+        head = "".join(f"<th>{html.escape(c)}</th>" for c in cols)
+        body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows)
+        return f"<table><tr>{head}</tr>{body}</table>"
+
+    return page(1280, 800, f"""
+<style>
+  table {{ width: 100%; border-collapse: collapse; font: 15px/1 ui-monospace, "SF Mono", Menlo, monospace; }}
+  th {{ text-align: left; padding: 9px 8px; background: #ecf7f9; color: #0e7490; font: 600 13px -apple-system, sans-serif; }}
+  td {{ padding: 9px 8px; border-top: 1px solid #e6eef0; color: #22383f; }}
+  .md-h {{ margin: 18px 0 10px; font: 700 15px ui-monospace, "SF Mono", Menlo, monospace; color: #0b1f26; }}
+</style>
+<div style="display:flex;align-items:center;gap:56px;height:100%;padding:0 80px">
+  <div style="width:430px;flex:none">
+    <span class="eyebrow">{html.escape(T["file_eyebrow"])}</span>
+    <h1>{T["file_title"]}</h1>
+    <p class="lead">{html.escape(T["file_lead"])}</p>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;gap:18px">
+    <div class="card" style="align-self:flex-end;max-width:560px;padding:16px 18px;border-radius:20px 20px 6px 20px">
+      <div style="display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#f1f6f7;margin-bottom:12px">
+        <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:#0891b2;color:#fff">{icon("file", 20)}</span>
+        <span><b style="font-size:15px">garmin-2026-10-08.md</b><br><span style="font-size:13px;color:#6b8790">Markdown · 42 KB</span></span>
+      </div>
+      <div style="font-size:18px;line-height:1.45">{html.escape(T["question"])}</div>
+    </div>
+    <div class="card" style="padding:8px 24px 18px">
+      <div class="md-h">## {html.escape(D["acts"])}</div>{table(D["act_cols"], acts)}
+      <div class="md-h">## {html.escape(D["days"])}</div>{table(D["day_cols"], days)}
+    </div>
+  </div>
+</div>""")
 
 
-def screenshot_privacy(lang: str) -> Image.Image:
-    """100 % local : le trajet des données."""
+def features(lang: str) -> str:
     T = TEXT[lang]
-    img = lagoon(1280, 800)
-    d = ImageDraw.Draw(img)
-    title(d, *T["privacy_title"])
-    w = 300
-    for i, (head, sub) in enumerate(T["flow"]):
-        x0 = 80 + i * (w + 90)
-        card(d, (x0, 280, x0 + w, 480))
-        d.text((x0 + w // 2, 355), head, font=fit(d, head, 30, w - 30, bold=True), fill=INK, anchor="mm")
-        d.text((x0 + w // 2, 410), sub, font=fit(d, sub, 20, w - 30), fill=MUTED, anchor="mm")
-        if i < 2:
-            ax = x0 + w + 15
-            d.line((ax, 380, ax + 55, 380), fill=WHITE, width=8)
-            d.polygon([(ax + 60, 380), (ax + 42, 366), (ax + 42, 394)], fill=WHITE)
-    for i, p in enumerate(T["promises"]):
-        x = 80 + (i % 2) * 560
-        y = 560 + (i // 2) * 60
-        d.ellipse((x, y + 6, x + 24, y + 30), fill=WHITE)
-        d.text((x + 40, y), p, font=fit(d, p, 28, 500), fill=WHITE)
-    return img
+    cards = "".join(f"""
+    <div class="card" style="padding:24px 22px;border-radius:18px">
+      <div style="display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#e3f5f8;color:#0891b2">{icon(k, 24)}</div>
+      <div style="margin:16px 0 6px;font-size:19px;font-weight:700">{html.escape(t)}</div>
+      <div style="font-size:15px;line-height:1.45;color:#56717a">{html.escape(d)}</div>
+    </div>""" for k, t, d in T["features"])
+    return page(1280, 800, f"""
+<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:0 80px">
+  <h1 style="margin:0 0 48px;text-align:center">{T["all_title"]}</h1>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:22px">{cards}</div>
+</div>""")
 
 
-def marquee(lang: str) -> Image.Image:
-    """Bannière 1400x560 en haut de la fiche."""
+def steps(lang: str) -> str:
     T = TEXT[lang]
-    img = lagoon(1400, 560)
-    d = ImageDraw.Draw(img)
-    # Pastille blanche derrière l'icône pour qu'elle ne se fonde pas dans le dégradé.
-    d.rounded_rectangle((128, 184, 372, 428), radius=58, fill=(6, 110, 135))
-    d.rounded_rectangle((110, 160, 354, 404), radius=58, fill=WHITE)
-    icon = draw_icon(220)
-    img.paste(icon, (122, 172), icon)
-    for k, line in enumerate(T["name"]):
-        d.text((400, 180 + k * 85), line, font=fit(d, line, 72, 940, bold=True), fill=WHITE)
-    d.text((404, 365), T["tagline"], font=fit(d, T["tagline"], 30, 940), fill=WHITE)
-    return img
+    cards = "".join(f"""
+    <div class="card" style="flex:1;padding:36px 32px 40px">
+      <div style="display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#5ee0d8,#0891b2);
+        color:#fff;font-size:30px;font-weight:800">{i + 1}</div>
+      <div style="margin:28px 0 10px;font-size:30px;font-weight:800;letter-spacing:-.02em">{html.escape(t)}</div>
+      <div style="font-size:19px;line-height:1.5;color:#4b6670">{html.escape(d)}</div>
+    </div>""" for i, (t, d) in enumerate(T["steps"]))
+    return page(1280, 800, f"""
+<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:0 80px">
+  <h1 style="margin:0 0 50px;text-align:center">{T["steps_title"]}</h1>
+  <div style="display:flex;gap:28px">{cards}</div>
+  <div style="display:flex;justify-content:center;gap:12px;margin-top:44px"><span class="fab" style="zoom:1.4">⌚ Garmin</span></div>
+</div>""")
 
 
-def promo_tile(lang: str) -> Image.Image:
-    """Vignette 440x280 demandée par le Chrome Web Store."""
-    first, second, lines = TEXT[lang]["promo"]
-    img = Image.new("RGB", (440, 280), CREAM)
-    d = ImageDraw.Draw(img)
-    icon = draw_icon(120)
-    img.paste(icon, (32, 80), icon)
-    d.text((172, 92), first, font=fit(d, first, 32, 250, bold=True), fill=INK)
-    d.text((172, 128), second, font=fit(d, second, 32, 250, bold=True), fill=LAGOON_DEEP)
-    for k, line in enumerate(lines):
-        d.text((172, 174 + k * 20), line, font=fit(d, line, 15, 255), fill=INK)
-    return img
+def privacy(lang: str) -> str:
+    T = TEXT[lang]
+    items = "".join(f"""<div style="display:flex;align-items:center;gap:14px;font-size:22px;font-weight:600">
+      <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#0891b2;color:#fff">{icon("check", 18, width=3)}</span>
+      {html.escape(p)}</div>""" for p in T["promises"])
+    flow = f'<span style="color:#0891b2">{icon("arrow", 26)}</span>'.join(
+        f'<span class="chip" style="font-size:17px;padding:12px 20px">{html.escape(s)}</span>' for s in T["flow"])
+    return page(1280, 800, f"""
+<div style="display:flex;align-items:center;gap:70px;height:100%;padding:0 90px">
+  <div style="flex:none;display:grid;place-items:center;width:300px;height:300px;border-radius:72px;
+    background:linear-gradient(135deg,#5ee0d8,#0891b2);color:#fff;box-shadow:0 40px 80px -30px rgba(8,145,178,.7)">{icon("lock", 140, width=1.6)}</div>
+  <div>
+    <h1 style="margin:0 0 34px;font-size:48px">{T["privacy_title"]}</h1>
+    <div style="display:flex;flex-direction:column;gap:16px">{items}</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:40px">{flow}</div>
+  </div>
+</div>""")
+
+
+def marquee(lang: str, icon_uri: str) -> str:
+    T = TEXT[lang]
+    chips = "".join(f'<span class="chip">{icon("check", 18, width=3)}{html.escape(c)}</span>' for c in T["chips"])
+    return page(1400, 560, f"""
+<div style="display:flex;align-items:center;justify-content:space-between;height:100%;padding:0 90px">
+  <div style="width:760px">
+    <img src="{icon_uri}" width="96" height="96" style="display:block;filter:drop-shadow(0 16px 24px rgba(8,145,178,.35))">
+    <h1 style="font-size:60px;margin:26px 0 16px">{html.escape(T["name"])}</h1>
+    <p class="lead" style="font-size:23px">{html.escape(T["tagline"])}</p>
+    <div class="chips" style="margin-top:26px">{chips}</div>
+  </div>
+  <div style="position:relative;zoom:1.25">{panel(lang)}<div style="text-align:right;margin-top:12px"><span class="fab">⌚ Garmin</span></div></div>
+</div>""")
+
+
+def promo(lang: str, icon_uri: str) -> str:
+    l1, l2 = TEXT[lang]["promo"]
+    return page(440, 280, f"""
+<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:0 34px">
+  <img src="{icon_uri}" width="64" height="64" style="filter:drop-shadow(0 10px 16px rgba(8,145,178,.35))">
+  <div style="margin-top:18px;font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.02em">{html.escape(l1)}<br><em>{html.escape(l2)}</em></div>
+</div>""")
+
+
+def render(html_text: str, out: Path, size: tuple[int, int], work: Path) -> None:
+    src = work / f"{out.parent.name}-{out.stem}.html"
+    src.write_text(html_text)
+    shot = work / "shot.png"
+    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
+                    "--allow-file-access-from-files", f"--window-size={size[0]},{size[1]}", "--virtual-time-budget=1500",
+                    f"--screenshot={shot}", src.as_uri()], check=True, capture_output=True)
+    img = Image.open(shot).convert("RGB")  # le Store veut du PNG 24 bits, sans transparence
+    if img.size != size:
+        img = img.crop((0, 0, *size))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out)
 
 
 if __name__ == "__main__":
-    for lang in TEXT:
-        shots = HERE / "screenshots" / lang
-        shots.mkdir(parents=True, exist_ok=True)
-        screenshot_site("claude", lang).save(shots / "1-claude-1280x800.png")
-        screenshot_site("chatgpt", lang).save(shots / "2-chatgpt-1280x800.png")
-        screenshot_data(lang).save(shots / "3-data-1280x800.png")
-        screenshot_steps(lang).save(shots / "4-steps-1280x800.png")
-        screenshot_privacy(lang).save(shots / "5-privacy-1280x800.png")
-        (HERE / lang).mkdir(exist_ok=True)
-        marquee(lang).save(HERE / lang / "banniere-1400x560.png")
-        promo_tile(lang).save(HERE / lang / "promo-440x280.png")
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        icon_png = work / "icon.png"
+        draw_icon(256).save(icon_png)
+        uri = icon_png.as_uri()
+        for lang in TEXT:
+            shots = HERE / "screenshots" / lang
+            render(hero(lang), shots / "1-hero-1280x800.png", (1280, 800), work)
+            render(file_shot(lang), shots / "2-file-1280x800.png", (1280, 800), work)
+            render(features(lang), shots / "3-features-1280x800.png", (1280, 800), work)
+            render(steps(lang), shots / "4-steps-1280x800.png", (1280, 800), work)
+            render(privacy(lang), shots / "5-privacy-1280x800.png", (1280, 800), work)
+            render(marquee(lang, uri), HERE / lang / "banniere-1400x560.png", (1400, 560), work)
+            render(promo(lang, uri), HERE / lang / "promo-440x280.png", (440, 280), work)
     print("ok")
