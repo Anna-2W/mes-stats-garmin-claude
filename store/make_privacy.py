@@ -13,7 +13,7 @@ html = f"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy · My Garmin Stats for AI</title>
+<title>Privacy · My Garmin Stats for ChatGPT/Claude</title>
 <link rel="icon" href="icon128.png">
 <style>
   body {{ max-width: 720px; margin: 0 auto; padding: 32px 20px; font: 16px/1.6 system-ui, sans-serif; color: #1f1e1d; background: #faf9f5; }}
