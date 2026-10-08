@@ -26,7 +26,6 @@ TEXT = {
             "claude": ("Right inside <em>Claude</em>", "The Garmin button appears in the corner of every chat."),
             "chatgpt": ("And inside <em>ChatGPT</em>", "Same button, same file, one click."),
         },
-        "click": "Click here",
         "tagline": "Your Garmin stats in Claude and ChatGPT, in one click. 100% local.",
         "free": "Free Chrome extension",
         "hero_title": "Your Garmin stats, <em>right in your AI chat</em>",
@@ -76,7 +75,6 @@ TEXT = {
             "claude": ("Directement dans <em>Claude</em>", "Le bouton Garmin apparaît dans le coin de chaque conversation."),
             "chatgpt": ("Et dans <em>ChatGPT</em>", "Même bouton, même fichier, en un clic."),
         },
-        "click": "Clique ici",
         "tagline": "Tes stats Garmin dans Claude et ChatGPT, en un clic. 100 % local.",
         "free": "Extension Chrome gratuite",
         "hero_title": "Tes stats Garmin, <em>directement dans ton chat IA</em>",
@@ -229,7 +227,6 @@ def site_shot(site: str, lang: str) -> str:
     x0, y0, x1, y1 = (round(v * scale) for v in FAB[f"{site}-{lang}"])
     pad = 10
     ring = f"left:{x0 - pad}px;top:{y0 - pad}px;width:{x1 - x0 + 2 * pad}px;height:{y1 - y0 + 2 * pad}px"
-    label = f"right:{w - x0 + 26}px;top:{(y0 + y1) // 2 - 22}px"
     return page(1280, 800, f"""
 <div style="display:flex;flex-direction:column;align-items:center;height:100%;padding-top:46px">
   <h1 style="margin:0 0 10px;font-size:46px;text-align:center">{heading}</h1>
@@ -239,9 +236,6 @@ def site_shot(site: str, lang: str) -> str:
     <img src="{src.as_uri()}" style="display:block;width:{w}px;height:{h}px;border-radius:16px">
     <div style="position:absolute;{ring};border-radius:999px;border:4px solid #5ee0d8;
       box-shadow:0 0 0 7px rgba(94,224,216,.35),0 0 30px rgba(94,224,216,.8)"></div>
-    <div style="position:absolute;{label};display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;
-      background:#fff;font-size:19px;font-weight:700;color:#0b1f26;box-shadow:0 10px 30px -8px rgba(0,0,0,.5)">
-      {html.escape(T["click"])}<span style="color:#0891b2">{icon("arrow", 22, width=2.6)}</span></div>
   </div>
 </div>""")
 
