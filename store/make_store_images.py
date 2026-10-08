@@ -1,7 +1,8 @@
 """Toutes les images du Chrome Web Store, en anglais et en français.
 
-Chaque image est une petite page HTML rendue par Chrome en mode headless : texte net, vraies polices,
-panneau de l'extension recréé avec son propre style. Les chiffres affichés sont des exemples inventés.
+Chaque image est une petite page HTML rendue par Chrome en mode headless, en double résolution puis réduite :
+texte net, vraies polices. Les captures 1 et 2 sont de vraies captures de claude.ai et chatgpt.com
+(store/sources/, prénom déjà masqué), les chiffres de la capture 3 sont des exemples inventés.
 
 Usage : uv run --no-project --with pillow python store/make_store_images.py
 Sortie : store/screenshots/<lang>/1 à 5 (1280x800), store/<lang>/banniere-1400x560.png et promo-440x280.png.
@@ -21,6 +22,11 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 TEXT = {
     "en": {
         "name": "My Garmin Stats for Claude",
+        "sites": {
+            "claude": ("Right inside <em>Claude</em>", "The Garmin button appears in the corner of every chat."),
+            "chatgpt": ("And inside <em>ChatGPT</em>", "Same button, same file, one click."),
+        },
+        "click": "Click here",
         "tagline": "Your Garmin stats in Claude and ChatGPT, in one click. 100% local.",
         "free": "Free Chrome extension",
         "hero_title": "Your Garmin stats, <em>right in your AI chat</em>",
@@ -66,6 +72,11 @@ TEXT = {
     },
     "fr": {
         "name": "Mes Stats Garmin pour Claude",
+        "sites": {
+            "claude": ("Directement dans <em>Claude</em>", "Le bouton Garmin apparaît dans le coin de chaque conversation."),
+            "chatgpt": ("Et dans <em>ChatGPT</em>", "Même bouton, même fichier, en un clic."),
+        },
+        "click": "Clique ici",
         "tagline": "Tes stats Garmin dans Claude et ChatGPT, en un clic. 100 % local.",
         "free": "Extension Chrome gratuite",
         "hero_title": "Tes stats Garmin, <em>directement dans ton chat IA</em>",
@@ -192,41 +203,46 @@ def panel(lang: str) -> str:
 </div>"""
 
 
-def chat_window(lang: str, inner: str, w: int, h: int) -> str:
-    """Fenêtre de chat sombre et neutre (aucune marque) où apparaît le bouton Garmin."""
-    return f"""
-<div style="position:relative;width:{w}px;height:{h}px;border-radius:20px;background:#1c1c1b;overflow:hidden;
-  box-shadow:0 30px 80px -20px rgba(11,31,38,.45)">
-  <div style="display:flex;gap:8px;padding:16px 18px">
-    <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span>
-    <span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span>
-    <span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
-  </div>
-  <div style="position:absolute;left:36px;right:36px;top:46%;height:96px;border-radius:18px;background:#2a2a28;
-    border:1px solid #3a3a37;padding:18px 22px;color:#8d8d86;font-size:18px">{html.escape(TEXT[lang]["ask"])}</div>
-  {inner}
-</div>"""
-
 
 def page(w: int, h: int, body: str) -> str:
     return f"<!doctype html><meta charset='utf-8'><style>{BASE_CSS % {'w': w, 'h': h}}</style><body>{body}</body>"
 
 
-def hero(lang: str) -> str:
+
+# Bouton Garmin dans chaque capture source (pixels de l'image d'origine).
+FAB = {
+    "claude-en": (1830, 1050, 2008, 1117),
+    "claude-fr": (1828, 996, 2006, 1063),
+    "chatgpt-en": (2043, 1120, 2221, 1187),
+    "chatgpt-fr": (1987, 1242, 2165, 1309),
+}
+
+
+def site_shot(site: str, lang: str) -> str:
+    """Vraie capture du site, entière, avec le bouton Garmin entouré."""
     T = TEXT[lang]
-    chips = "".join(f'<span class="chip">{icon("check", 18, width=3)}{html.escape(c)}</span>' for c in T["chips"])
-    inner = f"""
-  <div style="position:absolute;right:28px;bottom:92px;zoom:1.3">{panel(lang)}</div>
-  <div style="position:absolute;right:28px;bottom:26px;zoom:1.3"><span class="fab">⌚ Garmin</span></div>"""
+    heading, sub = T["sites"][site]
+    src = HERE / "sources" / f"{site}-{lang}.png"
+    w0, h0 = Image.open(src).size
+    scale = min(1100 / w0, 556 / h0)
+    w, h = round(w0 * scale), round(h0 * scale)
+    x0, y0, x1, y1 = (round(v * scale) for v in FAB[f"{site}-{lang}"])
+    pad = 10
+    ring = f"left:{x0 - pad}px;top:{y0 - pad}px;width:{x1 - x0 + 2 * pad}px;height:{y1 - y0 + 2 * pad}px"
+    label = f"right:{w - x0 + 26}px;top:{(y0 + y1) // 2 - 22}px"
     return page(1280, 800, f"""
-<div style="display:flex;align-items:center;gap:48px;height:100%;padding:0 50px 0 80px">
-  <div style="width:500px;flex:none">
-    <span class="eyebrow">{html.escape(T["free"])}</span>
-    <h1>{T["hero_title"]}</h1>
-    <p class="lead">{html.escape(T["hero_lead"])}</p>
-    <div class="chips">{chips}</div>
+<div style="display:flex;flex-direction:column;align-items:center;height:100%;padding-top:46px">
+  <h1 style="margin:0 0 10px;font-size:46px;text-align:center">{heading}</h1>
+  <p class="lead" style="margin:0 0 30px;text-align:center">{html.escape(sub)}</p>
+  <div style="position:relative;width:{w}px;height:{h}px;border-radius:16px;overflow:visible;
+    box-shadow:0 1px 2px rgba(11,31,38,.1),0 30px 70px -20px rgba(11,31,38,.45)">
+    <img src="{src.as_uri()}" style="display:block;width:{w}px;height:{h}px;border-radius:16px">
+    <div style="position:absolute;{ring};border-radius:999px;border:4px solid #5ee0d8;
+      box-shadow:0 0 0 7px rgba(94,224,216,.35),0 0 30px rgba(94,224,216,.8)"></div>
+    <div style="position:absolute;{label};display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;
+      background:#fff;font-size:19px;font-weight:700;color:#0b1f26;box-shadow:0 10px 30px -8px rgba(0,0,0,.5)">
+      {html.escape(T["click"])}<span style="color:#0891b2">{icon("arrow", 22, width=2.6)}</span></div>
   </div>
-  {chat_window(lang, inner, 602, 720)}
 </div>""")
 
 
@@ -287,22 +303,6 @@ def features(lang: str) -> str:
 </div>""")
 
 
-def steps(lang: str) -> str:
-    T = TEXT[lang]
-    cards = "".join(f"""
-    <div class="card" style="flex:1;padding:36px 32px 40px">
-      <div style="display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#5ee0d8,#0891b2);
-        color:#fff;font-size:30px;font-weight:800">{i + 1}</div>
-      <div style="margin:28px 0 10px;font-size:30px;font-weight:800;letter-spacing:-.02em">{html.escape(t)}</div>
-      <div style="font-size:19px;line-height:1.5;color:#4b6670">{html.escape(d)}</div>
-    </div>""" for i, (t, d) in enumerate(T["steps"]))
-    return page(1280, 800, f"""
-<div style="display:flex;flex-direction:column;justify-content:center;height:100%;padding:0 80px">
-  <h1 style="margin:0 0 50px;text-align:center">{T["steps_title"]}</h1>
-  <div style="display:flex;gap:28px">{cards}</div>
-  <div style="display:flex;justify-content:center;gap:12px;margin-top:44px"><span class="fab" style="zoom:1.4">⌚ Garmin</span></div>
-</div>""")
-
 
 def privacy(lang: str) -> str:
     T = TEXT[lang]
@@ -351,12 +351,12 @@ def render(html_text: str, out: Path, size: tuple[int, int], work: Path) -> None
     src = work / f"{out.parent.name}-{out.stem}.html"
     src.write_text(html_text)
     shot = work / "shot.png"
-    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
+    # Rendu en double résolution puis réduction : contours et textes plus fins qu'un rendu direct.
+    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=2",
                     "--allow-file-access-from-files", f"--window-size={size[0]},{size[1]}", "--virtual-time-budget=1500",
                     f"--screenshot={shot}", src.as_uri()], check=True, capture_output=True)
     img = Image.open(shot).convert("RGB")  # le Store veut du PNG 24 bits, sans transparence
-    if img.size != size:
-        img = img.crop((0, 0, *size))
+    img = img.crop((0, 0, size[0] * 2, size[1] * 2)).resize(size, Image.LANCZOS)
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out)
 
@@ -369,10 +369,12 @@ if __name__ == "__main__":
         uri = icon_png.as_uri()
         for lang in TEXT:
             shots = HERE / "screenshots" / lang
-            render(hero(lang), shots / "1-hero-1280x800.png", (1280, 800), work)
-            render(file_shot(lang), shots / "2-file-1280x800.png", (1280, 800), work)
-            render(features(lang), shots / "3-features-1280x800.png", (1280, 800), work)
-            render(steps(lang), shots / "4-steps-1280x800.png", (1280, 800), work)
+            for old in shots.glob("*.png"):
+                old.unlink()
+            render(site_shot("claude", lang), shots / "1-claude-1280x800.png", (1280, 800), work)
+            render(site_shot("chatgpt", lang), shots / "2-chatgpt-1280x800.png", (1280, 800), work)
+            render(file_shot(lang), shots / "3-file-1280x800.png", (1280, 800), work)
+            render(features(lang), shots / "4-features-1280x800.png", (1280, 800), work)
             render(privacy(lang), shots / "5-privacy-1280x800.png", (1280, 800), work)
             render(marquee(lang, uri), HERE / lang / "banniere-1400x560.png", (1400, 560), work)
             render(promo(lang, uri), HERE / lang / "promo-440x280.png", (440, 280), work)
