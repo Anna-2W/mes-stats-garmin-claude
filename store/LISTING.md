@@ -101,9 +101,9 @@ Script de contenu sur `https://claude.ai/*` :
 Affiche le bouton « ⌚ Garmin » dans claude.ai et joint le fichier de données au message que l'utilisateur est en train d'écrire. Le script ne lit pas les conversations.
 ```
 
-`storage` (à ajouter lors de l'envoi de la 1.0.1) :
+`storage` (à ajouter lors de l'envoi de la 1.1.0) :
 ```
-Conserve uniquement, en local, la date du dernier envoi de l'utilisateur pour lui proposer l'option « Depuis mon dernier envoi ». Aucune donnée sportive ou de santé n'est stockée.
+Conserve uniquement, en local, la date du dernier envoi de l'utilisateur (pour l'option « Depuis mon dernier envoi ») et la langue d'affichage choisie (anglais ou français). Aucune donnée sportive ou de santé n'est stockée.
 ```
 
 **Code distant** (Remote code) : `Non, je n'utilise pas de code distant.`

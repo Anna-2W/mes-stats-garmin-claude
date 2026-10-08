@@ -2,7 +2,7 @@
 
 Extension Chrome qui ajoute tes données Garmin Connect à une conversation Claude en un clic : activités, détail des séances, sommeil, HRV, FC au repos, stress, Body Battery, VO2 max, statut d'entraînement et prédictions de course.
 
-**100 % local.** L'extension lit tes données depuis ta session Garmin Connect déjà ouverte dans Chrome et les joint à ton message dans claude.ai. Aucun serveur, aucun compte à créer, aucun mot de passe demandé, aucune donnée sportive n'est stockée ni envoyée ailleurs (seule la date de ton dernier envoi est retenue, pour proposer « Depuis mon dernier envoi »).
+**100 % local.** L'extension lit tes données depuis ta session Garmin Connect déjà ouverte dans Chrome et les joint à ton message dans claude.ai. Aucun serveur, aucun compte à créer, aucun mot de passe demandé, aucune donnée sportive n'est stockée ni envoyée ailleurs (seules la date de ton dernier envoi et la langue choisie sont retenues).
 
 > Projet indépendant, non affilié à Garmin ni à Anthropic. Garmin et Garmin Connect sont des marques de Garmin Ltd. Claude est une marque d'Anthropic.
 

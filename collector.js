@@ -19,11 +19,13 @@ async function getGarminTab() {
 }
 
 // Lance la récupération dans l'onglet Garmin. onProgress({ done, total, label }) est appelé
-// régulièrement. Renvoie { markdown, warnings } ou lève une erreur lisible.
+// régulièrement. options.lang ("en" ou "fr") choisit la langue des messages et du fichier.
+// Renvoie { markdown, warnings } ou lève une erreur lisible.
 async function runCollection(options, onProgress) {
+  const lang = EXPORT_TEXT[options.lang] ? options.lang : DEFAULT_LANG;
   const tab = await getGarminTab();
   if (!tab.url?.startsWith("https://connect.garmin.com/")) {
-    throw new Error("Connecte-toi d'abord sur connect.garmin.com (dans ce navigateur), puis réessaie.");
+    throw new Error(t("errNotLoggedIn", null, lang));
   }
   const timer = setInterval(async () => {
     try {
@@ -42,9 +44,9 @@ async function runCollection(options, onProgress) {
       target: { tabId: tab.id },
       world: "MAIN", // contexte du site : ses cookies et son jeton CSRF
       func: collectGarminData,
-      args: [options],
+      args: [{ ...options, L: EXPORT_TEXT[lang] }],
     });
-    if (!result) throw new Error("Garmin n'a rien renvoyé. Recharge connect.garmin.com et réessaie.");
+    if (!result) throw new Error(t("errNothing", null, lang));
     if (result.error) throw new Error(result.error);
     return result;
   } finally {
@@ -53,19 +55,21 @@ async function runCollection(options, onProgress) {
 }
 
 // Exécutée DANS la page connect.garmin.com : doit être autonome (aucune variable externe).
-// options : days, sport ("all", "running", "strength", ...), details, activities, daily, fitness.
-async function collectGarminData({ days, sport = "all", details = false, activities = true, daily = true, fitness = true, stress = true, cycle = false }) {
+// options : days, sport ("all", "running", "strength", ...), details, activities, daily, fitness, stress, cycle,
+// et L, les textes du fichier dans la langue choisie (EXPORT_TEXT de i18n.js).
+async function collectGarminData({ days, sport = "all", details = false, activities = true, daily = true, fitness = true, stress = true, cycle = false, L }) {
+  const f = (text, vars) => text.replace(/\{(\w+)\}/g, (_, k) => vars?.[k] ?? "");
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-  if (!csrf) return { error: "Session Garmin introuvable : recharge connect.garmin.com et reconnecte-toi." };
+  if (!csrf) return { error: L.errSession };
 
   const CONTEXT_DAYS = 28; // journal Lifestyle et cycle : seulement les 28 derniers jours, pour limiter les appels
   const RAW_STRESS_DAYS = 90; // mesures de stress toutes les 3 min : seulement les 90 derniers jours (taille du fichier)
   const SPORTS = {
-    running: { label: "Course", match: /running/ },
-    strength: { label: "Muscu", match: /strength/ },
-    cycling: { label: "Vélo", match: /cycling|biking/ },
-    swimming: { label: "Natation", match: /swim/ },
-    walking: { label: "Marche / rando", match: /walking|hiking/ },
+    running: /running/,
+    strength: /strength/,
+    cycling: /cycling|biking/,
+    swimming: /swim/,
+    walking: /walking|hiking/,
   };
 
   // Avancement lu par l'extension (voir runCollection). total grandit quand on connaît le nombre de séances.
@@ -74,7 +78,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   const step = (label) => {
     window.__garminForClaudeProgress = { done, total, label };
   };
-  step("Profil");
+  step(L.progProfile);
 
   let warnings = 0;
   async function api(path, params) {
@@ -188,21 +192,21 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   try {
     profile = await api("/userprofile-service/socialProfile");
   } catch (e) {
-    return { error: `Garmin refuse l'accès (${e.message}). Recharge connect.garmin.com et réessaie.` };
+    return { error: f(L.errAccess, { e: e.message }) };
   }
   const displayName = profile?.displayName;
   done++;
 
-  const sportLabel = SPORTS[sport]?.label;
+  const sportLabel = SPORTS[sport] && L.sports[sport];
   const out = [
-    `# Mes données Garmin du ${startDate} au ${endDate}${sportLabel ? ` (${sportLabel})` : ""}`,
+    f(L.title, { start: startDate, end: endDate, sport: sportLabel ? ` (${sportLabel})` : "" }),
     "",
-    `Export depuis Garmin Connect le ${iso(today)}. Distances en km, durées d'activité en h:min:s ou min:s, sommeil en h:min, FC en bpm.`,
+    f(L.intro, { date: iso(today) }),
     "",
   ];
 
   if (fitness) {
-    step("État de forme");
+    step(L.progFitness);
     const [status, races] = await Promise.all([
       safe(`/metrics-service/metrics/trainingstatus/aggregated/${endDate}`),
       displayName ? safe(`/metrics-service/metrics/racepredictions/latest/${displayName}`) : null,
@@ -214,24 +218,29 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     const load = ts?.acuteTrainingLoadDTO;
     const balance = first(status?.mostRecentTrainingLoadBalance?.metricsTrainingLoadBalanceDTOMap);
 
-    out.push("## État de forme actuel", "");
-    out.push(`- VO2 max course : ${num(vo2, 1)}${vo2Bike ? `, vélo : ${num(vo2Bike, 1)}` : ""}`);
-    out.push(`- Statut d'entraînement : ${ts?.trainingStatusFeedbackPhrase ?? "-"}`);
+    out.push(L.fitnessTitle, "");
+    out.push(f(L.vo2, { run: num(vo2, 1), bike: vo2Bike ? f(L.vo2Bike, { v: num(vo2Bike, 1) }) : "" }));
+    out.push(f(L.trainingStatus, { v: ts?.trainingStatusFeedbackPhrase ?? "-" }));
     if (load) {
-      out.push(`- Charge aiguë (7 j) : ${num(load.dailyTrainingLoadAcute)}, chronique (28 j) : ${num(load.dailyTrainingLoadChronic)}, ratio : ${num(load.dailyAcuteChronicWorkloadRatio, 2)}`);
+      out.push(f(L.load, { acute: num(load.dailyTrainingLoadAcute), chronic: num(load.dailyTrainingLoadChronic), ratio: num(load.dailyAcuteChronicWorkloadRatio, 2) }));
     }
     if (balance) {
-      out.push(`- Charge mensuelle : aérobie basse ${num(balance.monthlyLoadAerobicLow)}, aérobie haute ${num(balance.monthlyLoadAerobicHigh)}, anaérobie ${num(balance.monthlyLoadAnaerobic)} (${balance.trainingBalanceFeedbackPhrase ?? "-"})`);
+      out.push(f(L.balance, {
+        low: num(balance.monthlyLoadAerobicLow),
+        high: num(balance.monthlyLoadAerobicHigh),
+        anaerobic: num(balance.monthlyLoadAnaerobic),
+        feedback: balance.trainingBalanceFeedbackPhrase ?? "-",
+      }));
     }
     if (races) {
-      out.push(`- Prédictions : 5 km ${dur(races.time5K)}, 10 km ${dur(races.time10K)}, semi ${dur(races.timeHalfMarathon)}, marathon ${dur(races.timeMarathon)}`);
+      out.push(f(L.races, { k5: dur(races.time5K), k10: dur(races.time10K), half: dur(races.timeHalfMarathon), full: dur(races.timeMarathon) }));
     }
     out.push("");
     done++;
   }
 
   if (activities) {
-    step("Activités");
+    step(L.progActivities);
     let list = [];
     for (let start = 0; ; start += 100) {
       const page = await safe("/activitylist-service/activities/search/activities", { start, limit: 100, startDate, endDate });
@@ -240,12 +249,12 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       if (page.length < 100) break;
       await pause(150);
     }
-    if (SPORTS[sport]) list = list.filter((a) => SPORTS[sport].match.test(a.activityType?.typeKey ?? ""));
+    if (SPORTS[sport]) list = list.filter((a) => SPORTS[sport].test(a.activityType?.typeKey ?? ""));
     list.sort((a, b) => (a.startTimeLocal < b.startTimeLocal ? -1 : 1));
     done++;
 
-    out.push(`## Activités (${list.length})`, "");
-    out.push("| Date | Type | Nom | Distance | Durée | Allure / vitesse | FC moy | FC max | D+ (m) | TE aéro | TE anaéro | Charge | Calories |");
+    out.push(f(L.activitiesTitle, { n: list.length }), "");
+    out.push(L.activitiesHeader);
     out.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     for (const a of list) {
       const type = a.activityType?.typeKey ?? "";
@@ -256,7 +265,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     if (details && list.length) {
       total += list.length;
       let detailDone = 0;
-      step(`Détail des séances 0/${list.length}`);
+      step(f(L.progDetails, { i: 0, n: list.length }));
 
       const sections = await inBatches(list, 3, async (a) => {
         const id = a.activityId;
@@ -270,7 +279,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
         ]);
         done++;
         detailDone++;
-        step(`Détail des séances ${detailDone}/${list.length}`);
+        step(f(L.progDetails, { i: detailDone, n: list.length }));
 
         const lines = [`### ${a.startTimeLocal?.slice(0, 16)} · ${cell(a.activityName)} (${type})`, ""];
 
@@ -278,31 +287,31 @@ async function collectGarminData({ days, sport = "all", details = false, activit
           const z = zones
             .filter((x) => x.secsInZone > 0)
             .map((x) => `Z${x.zoneNumber} ${dur(x.secsInZone)}${x.zoneLowBoundary ? ` (≥${x.zoneLowBoundary})` : ""}`);
-          if (z.length) lines.push(`- Zones cardio : ${z.join(", ")}`);
+          if (z.length) lines.push(f(L.zones, { v: z.join(", ") }));
         }
 
         const dyn = [
-          a.averageRunningCadenceInStepsPerMinute && `cadence ${num(a.averageRunningCadenceInStepsPerMinute)} pas/min`,
-          a.avgStrideLength && `foulée ${num(a.avgStrideLength / 100, 2)} m`,
-          a.avgGroundContactTime && `contact au sol ${num(a.avgGroundContactTime)} ms`,
-          a.avgVerticalOscillation && `oscillation ${num(a.avgVerticalOscillation, 1)} cm`,
-          a.avgVerticalRatio && `ratio vertical ${num(a.avgVerticalRatio, 1)} %`,
-          a.avgPower && `puissance ${num(a.avgPower)} W`,
+          a.averageRunningCadenceInStepsPerMinute && f(L.cadence, { v: num(a.averageRunningCadenceInStepsPerMinute) }),
+          a.avgStrideLength && f(L.stride, { v: num(a.avgStrideLength / 100, 2) }),
+          a.avgGroundContactTime && f(L.groundContact, { v: num(a.avgGroundContactTime) }),
+          a.avgVerticalOscillation && f(L.oscillation, { v: num(a.avgVerticalOscillation, 1) }),
+          a.avgVerticalRatio && f(L.verticalRatio, { v: num(a.avgVerticalRatio, 1) }),
+          a.avgPower && f(L.power, { v: num(a.avgPower) }),
         ].filter(Boolean);
-        if (dyn.length) lines.push(`- Dynamique : ${dyn.join(", ")}`);
+        if (dyn.length) lines.push(f(L.dynamics, { v: dyn.join(", ") }));
 
         if (weather && weather.temp != null) {
           const celsius = (weather.temp - 32) * (5 / 9); // Garmin donne la météo en °F
           const w = [`${num(celsius)} °C`];
-          if (weather.relativeHumidity != null) w.push(`humidité ${num(weather.relativeHumidity)} %`);
-          if (weather.windSpeed != null) w.push(`vent ${num(weather.windSpeed * 1.609)} km/h`);
+          if (weather.relativeHumidity != null) w.push(f(L.humidity, { v: num(weather.relativeHumidity) }));
+          if (weather.windSpeed != null) w.push(f(L.wind, { v: num(weather.windSpeed * 1.609) }));
           if (weather.weatherTypeDTO?.desc) w.push(weather.weatherTypeDTO.desc);
-          lines.push(`- Météo : ${w.join(", ")}`);
+          lines.push(f(L.weather, { v: w.join(", ") }));
         }
 
         const laps = splits?.lapDTOs;
         if (Array.isArray(laps) && laps.length > 1) {
-          lines.push("", "| Tour | Distance | Durée | Allure / vitesse | FC moy | FC max | Cadence | D+ (m) |", "|---|---|---|---|---|---|---|---|");
+          lines.push("", L.lapsHeader, "|---|---|---|---|---|---|---|---|");
           laps.forEach((l, i) => {
             lines.push(`| ${i + 1} | ${l.distance ? num(l.distance / 1000, 2) : "-"} | ${dur(l.duration)} | ${speed(type, l.averageSpeed)} | ${num(l.averageHR)} | ${num(l.maxHR)} | ${num(l.averageRunCadence)} | ${num(l.elevationGain)} |`);
           });
@@ -310,7 +319,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
 
         const active = (sets?.exerciseSets ?? []).filter((s) => s.setType === "ACTIVE");
         if (active.length) {
-          lines.push("", "| Série | Exercice | Répétitions | Charge | Durée |", "|---|---|---|---|---|");
+          lines.push("", L.setsHeader, "|---|---|---|---|---|");
           active.forEach((s, i) => {
             const ex = s.exercises?.[0];
             const name = [ex?.category, ex?.name].filter((x) => x && x !== "UNKNOWN").join(" / ") || "-";
@@ -324,13 +333,13 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       });
 
       const filled = sections.filter(Boolean);
-      if (filled.length) out.push("## Détail des séances", "", filled.join("\n\n"), "");
+      if (filled.length) out.push(L.detailsTitle, "", filled.join("\n\n"), "");
     }
   }
 
   if (daily && displayName) {
     let dayDone = 0;
-    step(`Journées 0/${days}`);
+    step(f(L.progDays, { i: 0, n: days }));
     const contextDates = new Set(dates.slice(-CONTEXT_DAYS));
     const rawStressDates = new Set(stress ? dates.slice(-RAW_STRESS_DAYS) : []);
     const rows = await inBatches(dates, 4, async (date) => {
@@ -347,7 +356,7 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       ]);
       done++;
       dayDone++;
-      step(`Journées ${dayDone}/${days}`);
+      step(f(L.progDays, { i: dayDone, n: days }));
       const s = sleep?.dailySleepDTO;
       const r = Array.isArray(readiness) ? readiness[0] : readiness;
       return {
@@ -378,8 +387,8 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       };
     });
 
-    out.push("## Journées", "");
-    out.push("| Date | Coucher | Réveil | Sommeil | Score sommeil | Profond | REM | HRV nuit (ms) | Statut HRV | FC repos | Stress moy | Body Battery max / min | Readiness | Pas |");
+    out.push(L.daysTitle, "");
+    out.push(L.daysHeader);
     out.push("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
     for (const d of rows) {
       out.push(`| ${d.date} | ${clock(d.bed)} | ${clock(d.wake)} | ${hm(d.sleep)} | ${num(d.sleepScore)} | ${hm(d.deep)} | ${hm(d.rem)} | ${num(d.hrv)} | ${cell(d.hrvStatus)} | ${num(d.rhr)} | ${num(d.stress)} | ${num(d.bbMax)} / ${num(d.bbMin)} | ${num(d.readiness)} | ${num(d.steps)} |`);
@@ -387,8 +396,8 @@ async function collectGarminData({ days, sport = "all", details = false, activit
     out.push("");
 
     if (stress) {
-      out.push("## Stress (0 à 100)", "");
-      out.push("| Date | Moyenne | Max | Repos | Faible | Moyen | Élevé | Pendant le sommeil |");
+      out.push(L.stressTitle, "");
+      out.push(L.stressHeader);
       out.push("|---|---|---|---|---|---|---|---|");
       for (const d of rows) {
         out.push(`| ${d.date} | ${num(d.stress)} | ${num(d.stressMax)} | ${hm(d.stressRest)} | ${hm(d.stressLow)} | ${hm(d.stressMedium)} | ${hm(d.stressHigh)} | ${num(d.sleepStress)} |`);
@@ -396,15 +405,15 @@ async function collectGarminData({ days, sport = "all", details = false, activit
       out.push("");
 
       for (const d of rows.filter((r) => r.raw)) {
-        out.push(`### Mesures de stress du ${d.date} (toutes les 3 min, heure locale de la première mesure puis valeurs)`, "", ...d.raw, "");
+        out.push(f(L.rawStressTitle, { date: d.date }), "", ...d.raw, "");
       }
 
       const context = rows.filter((d) => d.lifestyle || d.cycle);
       if (context.length) {
-        out.push("### Journal Garmin", "");
+        out.push(L.journalTitle, "");
         for (const d of context) {
-          const bits = [d.lifestyle && `lifestyle : ${d.lifestyle}`, d.cycle && `cycle : ${d.cycle}`].filter(Boolean);
-          out.push(`- ${d.date} : ${bits.join(" ; ")}`);
+          const bits = [d.lifestyle && f(L.journalLifestyle, { v: d.lifestyle }), d.cycle && f(L.journalCycle, { v: d.cycle })].filter(Boolean);
+          out.push(f(L.journalLine, { date: d.date, v: bits.join(" ; ") }));
         }
         out.push("");
       }

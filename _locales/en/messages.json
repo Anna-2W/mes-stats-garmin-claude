@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "My Garmin Stats for Claude",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Add your Garmin Connect stats (activities, sleep, HRV, fitness) to a Claude conversation in one click. 100% local.",
+    "description": "Extension description (132 characters max)"
+  }
+}

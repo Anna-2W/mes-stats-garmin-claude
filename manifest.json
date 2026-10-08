@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Mes Stats Garmin pour Claude",
-  "version": "1.0.1",
-  "description": "Ajoute tes stats Garmin Connect (activités, sommeil, HRV, forme) à une conversation Claude en un clic. 100 % local.",
+  "name": "__MSG_extName__",
+  "version": "1.1.0",
+  "default_locale": "en",
+  "description": "__MSG_extDescription__",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -25,6 +26,7 @@
         "https://claude.ai/*"
       ],
       "js": [
+        "i18n.js",
         "periods.js",
         "claude-button.js"
       ],
@@ -32,7 +34,7 @@
     }
   ],
   "action": {
-    "default_title": "Mes Stats Garmin pour Claude",
+    "default_title": "__MSG_extName__",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

@@ -16,7 +16,7 @@ Quand tu cliques sur « Ajouter à la conversation » ou « Récupérer mes donn
 
 - Elle ne demande ni ne stocke ton identifiant ou ton mot de passe Garmin.
 - Elle n'envoie aucune donnée à un serveur du développeur : il n'en existe pas.
-- Elle ne stocke aucune donnée sportive ou de santé. La seule information conservée, dans ton navigateur uniquement, est **la date de ton dernier envoi** (par exemple « 2026-10-06 »), pour te proposer l'option « Depuis mon dernier envoi ». Elle disparaît si tu désinstalles l'extension.
+- Elle ne stocke aucune donnée sportive ou de santé. Les seules informations conservées, dans ton navigateur uniquement, sont **la date de ton dernier envoi** (par exemple « 2026-10-06 »), pour te proposer l'option « Depuis mon dernier envoi », et **la langue choisie** (anglais ou français). Elles disparaissent si tu désinstalles l'extension.
 - Elle ne contient aucun outil de mesure d'audience, de publicité ou de suivi.
 - Elle ne vend ni ne partage aucune donnée avec qui que ce soit.
 
@@ -33,7 +33,7 @@ Elles ne sont transmises qu'à un seul endroit : la conversation claude.ai à la
 | Accès à connect.garmin.com | Lire tes données depuis ta session Garmin Connect |
 | Script sur claude.ai | Afficher le bouton « ⌚ Garmin » et joindre le fichier à ton message |
 | `scripting` | Exécuter la lecture des données dans l'onglet Garmin Connect |
-| `storage` | Retenir la date de ton dernier envoi, et rien d'autre |
+| `storage` | Retenir la date de ton dernier envoi et la langue choisie, rien d'autre |
 
 ## Contact
 

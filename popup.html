@@ -1,11 +1,15 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Mes Stats Garmin pour Claude</title>
+  <title>My Garmin Stats for Claude</title>
   <style>
     body { width: 360px; margin: 0; padding: 16px; font: 13px/1.4 system-ui, sans-serif; color: #1a1a1a; }
-    h1 { font-size: 15px; margin: 0 0 12px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; }
+    h1 { font-size: 15px; margin: 0; }
+    .lang { display: flex; border: 1px solid #ddd; border-radius: 999px; overflow: hidden; }
+    .lang button { padding: 2px 8px; border: 0; border-radius: 0; background: #fff; color: #555; font-size: 11px; font-weight: 600; }
+    .lang button.on { background: #0891b2; color: #fff; }
     fieldset { border: 1px solid #ddd; border-radius: 6px; margin: 0 0 12px; padding: 8px 12px; }
     legend { font-weight: 600; padding: 0 4px; }
     label { display: block; margin: 4px 0; cursor: pointer; }
@@ -27,47 +31,51 @@
   </style>
 </head>
 <body>
-  <h1>Mes Stats Garmin pour Claude</h1>
+  <header>
+    <h1 id="title"></h1>
+    <div class="lang"><button data-lang="en">EN</button><button data-lang="fr">FR</button></div>
+  </header>
 
   <fieldset>
-    <legend>Période</legend>
+    <legend data-i18n="period"></legend>
     <select id="days"></select>
     <div id="since" hidden></div>
   </fieldset>
 
   <fieldset>
-    <legend>Données</legend>
-    <label><input type="checkbox" id="activities" checked> Activités :
+    <legend data-i18n="data"></legend>
+    <label><input type="checkbox" id="activities" checked> <span data-i18n="activities"></span>
       <select id="sport">
-        <option value="all">toutes</option>
-        <option value="running">course</option>
-        <option value="strength">muscu</option>
-        <option value="cycling">vélo</option>
-        <option value="swimming">natation</option>
-        <option value="walking">marche / rando</option>
+        <option value="all" data-i18n="sportAll"></option>
+        <option value="running" data-i18n="sportRunning"></option>
+        <option value="strength" data-i18n="sportStrength"></option>
+        <option value="cycling" data-i18n="sportCycling"></option>
+        <option value="swimming" data-i18n="sportSwimming"></option>
+        <option value="walking" data-i18n="sportWalking"></option>
       </select>
     </label>
-    <label><input type="checkbox" id="details"> Détail de chaque séance (tours, zones, séries)</label>
-    <label><input type="checkbox" id="stress" checked> Stress détaillé (répartition, mesures toutes les 3 min sur 90 jours, journal)</label>
-    <label><input type="checkbox" id="cycle"> Cycle menstruel (si suivi dans Garmin)</label>
-    <label><input type="checkbox" id="daily" checked> Journées (sommeil, HRV, FC repos, stress, Body Battery)</label>
-    <label><input type="checkbox" id="fitness" checked> État de forme (VO2 max, statut, prédictions)</label>
+    <label><input type="checkbox" id="details"> <span data-i18n="details"></span></label>
+    <label><input type="checkbox" id="stress" checked> <span data-i18n="stress"></span></label>
+    <label><input type="checkbox" id="cycle"> <span data-i18n="cycle"></span></label>
+    <label><input type="checkbox" id="daily" checked> <span data-i18n="daily"></span></label>
+    <label><input type="checkbox" id="fitness" checked> <span data-i18n="fitness"></span></label>
   </fieldset>
 
-  <button class="primary" id="go">Récupérer mes données</button>
+  <button class="primary" id="go" data-i18n="popupGo"></button>
   <div id="progress" hidden><div id="progress-bar"></div></div>
   <div id="status"></div>
 
   <div id="result" hidden>
     <textarea id="output" readonly></textarea>
     <div class="row">
-      <button id="copy">Copier</button>
-      <button id="download">Télécharger .md</button>
+      <button id="copy" data-i18n="copy"></button>
+      <button id="download" data-i18n="download"></button>
     </div>
-    <p class="note">Colle le texte ou glisse le fichier dans une conversation Claude.</p>
+    <p class="note" data-i18n="pasteNote"></p>
   </div>
 
-  <p class="note">Tu dois être connecté·e à connect.garmin.com dans ce navigateur. Rien n'est envoyé ailleurs.</p>
+  <p class="note" data-i18n="loginNote"></p>
+  <script src="i18n.js"></script>
   <script src="periods.js"></script>
   <script src="collector.js"></script>
   <script src="popup.js"></script>

@@ -17,7 +17,22 @@ function setProgress(done, total) {
 }
 
 let resolveDays = () => 28;
-setupPeriodPicker($("days"), $("since")).then((fn) => (resolveDays = fn));
+
+// Langue : anglais par défaut, FR au choix (même réglage que le panneau dans claude.ai).
+async function showLang() {
+  document.documentElement.lang = LANG;
+  document.title = $("title").textContent = t("appName");
+  applyTexts(document);
+  document.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
+  resolveDays = await setupPeriodPicker($("days"), $("since"));
+}
+document.querySelectorAll(".lang button").forEach((b) =>
+  b.addEventListener("click", async () => {
+    await saveLang(b.dataset.lang);
+    await showLang();
+  })
+);
+loadLang().then(showLang);
 
 $("go").addEventListener("click", async () => {
   let days;
@@ -36,11 +51,12 @@ $("go").addEventListener("click", async () => {
     cycle: $("cycle").checked,
     daily: $("daily").checked,
     fitness: $("fitness").checked,
+    lang: LANG,
   };
   $("go").disabled = true;
   $("result").hidden = true;
   setProgress(0, 1);
-  setStatus("Connexion à Garmin...", { busy: true });
+  setStatus(t("connecting"), { busy: true });
 
   try {
     const result = await runCollection(options, (p) => {
@@ -51,7 +67,7 @@ $("go").addEventListener("click", async () => {
     await rememberExport();
     $("result").hidden = false;
     setProgress(1, 1);
-    setStatus(result.warnings ? `Terminé, ${result.warnings} donnée(s) manquante(s).` : "Terminé.");
+    setStatus(result.warnings ? t("doneMissing", { n: result.warnings }) : t("done"));
   } catch (e) {
     $("progress").hidden = true;
     setStatus(e.message, { error: true });
@@ -62,8 +78,8 @@ $("go").addEventListener("click", async () => {
 
 $("copy").addEventListener("click", async () => {
   await navigator.clipboard.writeText($("output").value);
-  $("copy").textContent = "Copié !";
-  setTimeout(() => ($("copy").textContent = "Copier"), 1500);
+  $("copy").textContent = t("copied");
+  setTimeout(() => ($("copy").textContent = t("copy")), 1500);
 });
 
 $("download").addEventListener("click", () => {

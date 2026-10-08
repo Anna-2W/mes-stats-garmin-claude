@@ -1,5 +1,5 @@
 // Choix de la période, partagé entre le panneau claude.ai (claude-button.js) et la fenêtre (popup.js).
-// La seule chose que l'extension garde : la date du dernier envoi, pour proposer « Depuis mon dernier envoi ».
+// L'extension ne garde que la date du dernier envoi (pour proposer « Depuis mon dernier envoi ») et la langue (i18n.js).
 const LAST_EXPORT_KEY = "lastExportDate";
 const MAX_DAYS = 365;
 
@@ -32,7 +32,16 @@ async function rememberExport() {
   }
 }
 
-const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+// Dates lisibles dans la langue choisie : 6/10 ou Oct 6, 06/10/2026 ou October 6, 2026.
+function shortDate(iso) {
+  const [, m, d] = iso.split("-");
+  return LANG === "fr" ? `${d}/${m}` : `${t("months")[m - 1].slice(0, 3)} ${Number(d)}`;
+}
+function longDate(iso) {
+  const [y, m, d] = iso.split("-");
+  return LANG === "fr" ? `${d}/${m}/${y}` : `${t("months")[m - 1]} ${Number(d)}, ${y}`;
+}
+
 const CALENDAR_CSS = `
   .gc-cal { margin: 6px 0 2px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a;
             font: 12px/1.3 system-ui, sans-serif; user-select: none; }
@@ -67,19 +76,19 @@ function mountCalendar(el, onPick) {
     style.textContent = CALENDAR_CSS;
     const head = document.createElement("div");
     head.className = "head";
-    const prev = Object.assign(document.createElement("button"), { type: "button", textContent: "‹", title: "Mois précédent" });
-    const next = Object.assign(document.createElement("button"), { type: "button", textContent: "›", title: "Mois suivant" });
+    const prev = Object.assign(document.createElement("button"), { type: "button", textContent: "‹", title: t("prevMonth") });
+    const next = Object.assign(document.createElement("button"), { type: "button", textContent: "›", title: t("nextMonth") });
     prev.disabled = year * 12 + month <= earliest.getFullYear() * 12 + earliest.getMonth();
     next.disabled = year * 12 + month >= now.getFullYear() * 12 + now.getMonth();
     prev.onclick = () => { month--; if (month < 0) { month = 11; year--; } render(); };
     next.onclick = () => { month++; if (month > 11) { month = 0; year++; } render(); };
     const label = document.createElement("span");
-    label.textContent = `${MONTHS[month]} ${year}`;
+    label.textContent = `${t("months")[month]} ${year}`;
     head.append(prev, label, next);
 
     const grid = document.createElement("div");
     grid.className = "grid";
-    for (const wd of ["L", "M", "M", "J", "V", "S", "D"]) {
+    for (const wd of t("weekdays")) {
       grid.append(Object.assign(document.createElement("div"), { className: "wd", textContent: wd }));
     }
     const offset = (new Date(year, month, 1).getDay() + 6) % 7; // semaine commençant lundi
@@ -98,8 +107,8 @@ function mountCalendar(el, onPick) {
     const foot = document.createElement("div");
     foot.className = "foot";
     foot.textContent = selected
-      ? `Depuis le ${selected.slice(8, 10)}/${selected.slice(5, 7)}/${selected.slice(0, 4)} (${daysSince(selected)} jour${daysSince(selected) > 1 ? "s" : ""})`
-      : "Choisis le jour de départ";
+      ? t("since", { date: longDate(selected), n: daysSince(selected), s: daysSince(selected) > 1 ? "s" : "" })
+      : t("pickStart");
 
     el.className = "gc-cal";
     el.replaceChildren(style, head, grid, foot);
@@ -108,32 +117,33 @@ function mountCalendar(el, onPick) {
 }
 
 // Remplit le <select> de période et gère le calendrier. Renvoie resolveDays(), qui donne le
-// nombre de jours à récupérer ou lève une erreur lisible.
+// nombre de jours à récupérer ou lève une erreur lisible. Peut être rappelé après un changement de langue.
 async function setupPeriodPicker(select, calendarEl) {
   const last = await getLastExport();
   const options = [
-    last && ["since-last", `Depuis mon dernier envoi (${last.slice(8, 10)}/${last.slice(5, 7)})`],
-    ["1", "Aujourd'hui"],
-    ["7", "7 derniers jours"],
-    ["28", "4 dernières semaines"],
-    ["90", "3 derniers mois"],
-    ["180", "6 derniers mois"],
-    ["365", "1 an"],
-    ["custom", "Depuis une date..."],
+    last && ["since-last", t("sinceLast", { date: shortDate(last) })],
+    ["1", t("today")],
+    ["7", t("last7")],
+    ["28", t("last28")],
+    ["90", t("last90")],
+    ["180", t("last180")],
+    ["365", t("last365")],
+    ["custom", t("custom")],
   ].filter(Boolean);
+  const previous = select.value;
   select.replaceChildren(...options.map(([value, label]) => new Option(label, value)));
-  select.value = last ? "since-last" : "28";
+  select.value = options.some(([value]) => value === previous) ? previous : last ? "since-last" : "28";
 
   let picked = null;
   mountCalendar(calendarEl, (iso) => (picked = iso));
   const sync = () => (calendarEl.hidden = select.value !== "custom");
-  select.addEventListener("change", sync);
+  select.onchange = sync;
   sync();
 
   return function resolveDays() {
     if (select.value === "since-last") return daysSince(last);
     if (select.value === "custom") {
-      if (!picked) throw new Error("Choisis le jour de départ dans le calendrier.");
+      if (!picked) throw new Error(t("pickError"));
       return daysSince(picked);
     }
     return Number(select.value);

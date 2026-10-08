@@ -15,7 +15,11 @@
       .fab:hover { background: #0e7490; }
       .panel { position: absolute; right: 0; bottom: 48px; width: 280px; padding: 14px; border-radius: 12px;
                background: #fff; color: #1a1a1a; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
-      .panel h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+      .head { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; }
+      .head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+      .lang { display: flex; border: 1px solid #ddd; border-radius: 999px; overflow: hidden; }
+      .lang button { padding: 2px 8px; border: 0; background: #fff; color: #555; font-size: 11px; font-weight: 600; cursor: pointer; }
+      .lang button.on { background: #0891b2; color: #fff; }
       .field { display: block; margin-bottom: 8px; color: #555; }
       .field select { display: block; width: 100%; margin-top: 3px; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
                background: #fff; color: #1a1a1a; }
@@ -37,32 +41,35 @@
       [hidden] { display: none !important; }
     </style>
     <div class="panel" hidden>
-      <h2>Ajouter mes données Garmin</h2>
-      <label class="field">Période
+      <div class="head">
+        <h2 data-i18n="panelTitle"></h2>
+        <div class="lang"><button data-lang="en">EN</button><button data-lang="fr">FR</button></div>
+      </div>
+      <label class="field"><span data-i18n="period"></span>
         <select class="days"></select>
       </label>
       <div class="since" hidden></div>
-      <label class="field">Activités
+      <label class="field"><span data-i18n="activities"></span>
         <select class="sport">
-          <option value="all">Toutes</option>
-          <option value="running">Course</option>
-          <option value="strength">Muscu</option>
-          <option value="cycling">Vélo</option>
-          <option value="swimming">Natation</option>
-          <option value="walking">Marche / rando</option>
+          <option value="all" data-i18n="sportAll"></option>
+          <option value="running" data-i18n="sportRunning"></option>
+          <option value="strength" data-i18n="sportStrength"></option>
+          <option value="cycling" data-i18n="sportCycling"></option>
+          <option value="swimming" data-i18n="sportSwimming"></option>
+          <option value="walking" data-i18n="sportWalking"></option>
         </select>
       </label>
-      <label class="check"><input type="checkbox" class="details"> Détail de chaque séance (tours, zones, séries)</label>
-      <label class="check"><input type="checkbox" class="stress" checked> Stress détaillé (répartition, mesures toutes les 3 min sur 90 jours, journal)</label>
-      <label class="check"><input type="checkbox" class="cycle"> Cycle menstruel (si suivi dans Garmin)</label>
-      <button class="go">Ajouter à la conversation</button>
+      <label class="check"><input type="checkbox" class="details"> <span data-i18n="details"></span></label>
+      <label class="check"><input type="checkbox" class="stress" checked> <span data-i18n="stress"></span></label>
+      <label class="check"><input type="checkbox" class="cycle"> <span data-i18n="cycle"></span></label>
+      <button class="go" data-i18n="go"></button>
       <div class="bar" hidden><div></div></div>
       <div class="status" hidden></div>
       <div class="actions" hidden>
-        <button class="copy">Copier le texte</button>
+        <button class="copy" data-i18n="copyText"></button>
       </div>
     </div>
-    <button class="fab" title="Ajouter mes données Garmin à la conversation">⌚ Garmin</button>
+    <button class="fab" data-i18n-title="fabTitle">⌚ Garmin</button>
   `;
   document.body.append(host);
 
@@ -74,7 +81,20 @@
   let busy = false;
   let lastMarkdown = "";
   let resolveDays = () => 28;
-  setupPeriodPicker($(".days"), $(".since")).then((fn) => (resolveDays = fn));
+
+  // Langue : anglais par défaut, FR au choix. Le changement s'applique tout de suite et reste mémorisé.
+  async function showLang() {
+    applyTexts(root);
+    root.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
+    resolveDays = await setupPeriodPicker($(".days"), $(".since"));
+  }
+  root.querySelectorAll(".lang button").forEach((b) =>
+    b.addEventListener("click", async () => {
+      await saveLang(b.dataset.lang);
+      await showLang();
+    })
+  );
+  loadLang().then(showLang);
 
   function setStatus(text, kind = "") {
     status.hidden = false;
@@ -125,7 +145,7 @@
       $(".go").disabled = true;
       actions.hidden = true;
       setProgress(0, 1);
-      setStatus("Connexion à Garmin...", "busy");
+      setStatus(t("connecting"), "busy");
       try {
         const res = await chrome.runtime.sendMessage({
           type: "collect",
@@ -134,17 +154,18 @@
           details: $(".details").checked,
           stress: $(".stress").checked,
           cycle: $(".cycle").checked,
+          lang: LANG,
         });
-        if (!res?.ok) throw new Error(res?.error || "Erreur inconnue.");
+        if (!res?.ok) throw new Error(res?.error || t("unknownError"));
         lastMarkdown = res.markdown;
         setProgress(1, 1);
         const name = `garmin-${new Date().toISOString().slice(0, 10)}.md`;
         const file = new File([res.markdown], name, { type: "text/markdown" });
         if (attachToComposer(file)) {
           await rememberExport();
-          setStatus(`Fichier ajouté au message ✓${res.warnings ? ` (${res.warnings} donnée(s) manquante(s))` : ""}`, "ok");
+          setStatus(t("attached") + (res.warnings ? t("missing", { n: res.warnings }) : ""), "ok");
         } else {
-          setStatus("Je n'ai pas trouvé la zone de message. Copie le texte et colle-le.", "error");
+          setStatus(t("noComposer"), "error");
         }
         actions.hidden = false; // secours si la pièce jointe n'apparaît pas
       } catch (e) {
@@ -158,6 +179,6 @@
 
   $(".copy").addEventListener("click", async () => {
     await navigator.clipboard.writeText(lastMarkdown);
-    $(".copy").textContent = "Copié ! Colle avec Cmd+V";
+    $(".copy").textContent = t("copiedPaste");
   });
 })();
