@@ -114,27 +114,49 @@
 
   $(".fab").addEventListener("click", () => (panel.hidden = !panel.hidden));
 
-  // Joint le fichier au message en cours, comme un glisser-déposer.
+  // Zone de message visible : selon le site, le compte et la version de l'interface, c'est un éditeur riche ou un textarea.
+  function findComposer() {
+    const selectors = ["#prompt-textarea", '[contenteditable="true"]', '[contenteditable="plaintext-only"]', "textarea"];
+    for (const sel of selectors) {
+      const el = [...document.querySelectorAll(sel)].find((e) => e.offsetParent !== null && !host.contains(e));
+      if (el) return el;
+    }
+    return null;
+  }
+
+  // Champ de fichier qui accepte autre chose que des images (ChatGPT en a un réservé aux photos).
+  function findFileInput() {
+    return [...document.querySelectorAll('input[type="file"]')].find((i) => !/^image\//.test(i.accept ?? ""));
+  }
+
+  // Joint le fichier au message en cours : collage, puis glisser-déposer, puis champ de fichier caché.
   function attachToComposer(file) {
     const dt = new DataTransfer();
     dt.items.add(file);
-    // ChatGPT : plusieurs champs de fichier cachés (dont un réservé aux images), le collage est plus sûr.
-    const chatgptEditor = location.hostname === "chatgpt.com" && document.querySelector("#prompt-textarea");
-    if (chatgptEditor) {
-      chatgptEditor.focus();
-      chatgptEditor.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
-      return true;
-    }
-    const input = document.querySelector('input[type="file"]');
-    if (input) {
+    const chatgpt = location.hostname === "chatgpt.com";
+    const input = findFileInput();
+    if (input && !chatgpt) {
       input.files = dt.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
       return true;
     }
-    const editor = document.querySelector('[contenteditable="true"]');
-    if (editor) {
-      editor.focus();
-      editor.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+    const composer = findComposer();
+    if (composer) {
+      composer.focus();
+      const paste = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true });
+      composer.dispatchEvent(paste);
+      // Un site qui accepte le fichier collé annule le collage par défaut. Sinon, on tente un glisser-déposer.
+      if (!paste.defaultPrevented) {
+        const target = composer.closest("form") ?? composer;
+        for (const type of ["dragenter", "dragover", "drop"]) {
+          target.dispatchEvent(new DragEvent(type, { dataTransfer: dt, bubbles: true, cancelable: true }));
+        }
+      }
+      return true;
+    }
+    if (input) {
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
       return true;
     }
     return false;
