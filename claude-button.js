@@ -177,7 +177,8 @@
         actions.hidden = false; // secours si la pièce jointe n'apparaît pas
       } catch (e) {
         bar.hidden = true;
-        setStatus(e.message, "error");
+        // Après une mise à jour de l'extension, ce bouton reste dans la page mais n'est plus relié à elle.
+        setStatus(/context invalidated/i.test(e.message) ? t("reloadPage") : e.message, "error");
       } finally {
         busy = false;
         $(".go").disabled = false;
