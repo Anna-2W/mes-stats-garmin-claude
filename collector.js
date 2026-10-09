@@ -1,9 +1,11 @@
 // Logique partagée entre la fenêtre de l'extension (popup.js) et le service worker (background.js).
 const GARMIN_HOME = "https://connect.garmin.com/modern/";
 
-// Trouve un onglet Garmin Connect ouvert, sinon en ouvre un en arrière-plan.
+// Trouve l'onglet Garmin Connect utilisé le plus récemment (un vieil onglet peut avoir un jeton périmé),
+// sinon en ouvre un en arrière-plan.
 async function getGarminTab() {
-  const [existing] = await chrome.tabs.query({ url: "https://connect.garmin.com/*" });
+  const tabs = await chrome.tabs.query({ url: "https://connect.garmin.com/*" });
+  const existing = tabs.sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0))[0];
   if (existing) return existing;
   const tab = await chrome.tabs.create({ url: GARMIN_HOME, active: false });
   await new Promise((resolve) => {
@@ -81,12 +83,24 @@ async function collectGarminData({ days, sport = "all", details = false, activit
   step(L.progProfile);
 
   let warnings = 0;
+  // Garmin répond 403 quand le jeton de la page est périmé : on passe alors par /proxy, qui n'utilise que
+  // les cookies de session, et on garde ce chemin pour la suite.
+  let base = "/gc-api";
   async function api(path, params) {
     const qs = params ? `?${new URLSearchParams(params)}` : "";
-    const r = await fetch(`/gc-api${path}${qs}`, {
+    const get = (prefix) => fetch(`${prefix}${path}${qs}`, {
       credentials: "include",
-      headers: { "connect-csrf-token": csrf, NK: "NT", Accept: "application/json" },
+      headers: { "connect-csrf-token": document.querySelector('meta[name="csrf-token"]')?.content ?? csrf, NK: "NT", Accept: "application/json" },
     });
+    let r = await get(base);
+    if ((r.status === 401 || r.status === 403) && base === "/gc-api") {
+      const retry = await get("/proxy");
+      // Garmin peut répondre 200 avec la page HTML du site : on ne garde /proxy que s'il renvoie des données.
+      if (retry.status === 204 || (retry.ok && /json/.test(retry.headers.get("content-type") ?? ""))) {
+        base = "/proxy";
+        r = retry;
+      }
+    }
     if (r.status === 204) return null;
     if (!r.ok) throw new Error(`${r.status} ${path}`);
     return r.json();
