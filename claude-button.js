@@ -162,6 +162,17 @@
     return false;
   }
 
+  // Le site affiche le nom du fichier joint : s'il n'apparaît pas, c'est qu'il l'a refusé
+  // (ChatGPT sans compte, par exemple). Notre panneau est dans un shadow DOM, il n'est pas lu ici.
+  async function fileShown(name) {
+    const base = name.replace(/\.md$/, "");
+    for (let i = 0; i < 15; i++) {
+      if (document.body.innerText.includes(base)) return true;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    return false;
+  }
+
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type !== "progress" || !busy) return;
     setProgress(msg.done, msg.total);
@@ -190,9 +201,11 @@
         setProgress(1, 1);
         const name = `garmin-${new Date().toISOString().slice(0, 10)}.md`;
         const file = new File([res.markdown], name, { type: "text/markdown" });
-        if (attachToComposer(file)) {
+        if (attachToComposer(file) && (await fileShown(name))) {
           await rememberExport();
           setStatus(t("attached") + (res.warnings ? t("missing", { n: res.warnings }) : ""), "ok");
+        } else if (findComposer()) {
+          setStatus(t("notAccepted"), "error");
         } else {
           setStatus(t("noComposer"), "error");
         }
