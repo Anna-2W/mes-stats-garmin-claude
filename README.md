@@ -1,8 +1,8 @@
-# Mes Stats Garmin pour Claude
+# Mes Stats Garmin pour ChatGPT/Claude
 
 Extension Chrome qui ajoute tes données Garmin Connect à une conversation Claude en un clic : activités, détail des séances, sommeil, HRV, FC au repos, stress, Body Battery, VO2 max, statut d'entraînement et prédictions de course.
 
-**100 % local.** L'extension lit tes données depuis ta session Garmin Connect déjà ouverte dans Chrome et les joint à ton message dans claude.ai. Aucun serveur, aucun compte à créer, aucun mot de passe demandé, rien n'est stocké ni envoyé ailleurs.
+**100 % local.** L'extension lit tes données depuis ta session Garmin Connect déjà ouverte dans Chrome et les joint à ton message dans claude.ai. Aucun serveur, aucun compte à créer, aucun mot de passe demandé, aucune donnée sportive n'est stockée ni envoyée ailleurs (seules la date de ton dernier envoi et la langue choisie sont retenues).
 
 > Projet indépendant, non affilié à Garmin ni à Anthropic. Garmin et Garmin Connect sont des marques de Garmin Ltd. Claude est une marque d'Anthropic.
 
@@ -24,7 +24,7 @@ Fonctionne aussi sur Edge, Brave et les autres navigateurs basés sur Chrome.
 1. Connecte-toi une fois à [connect.garmin.com](https://connect.garmin.com) dans ton navigateur.
 2. Ouvre une conversation sur [claude.ai](https://claude.ai).
 3. Clique sur le bouton orange **⌚ Garmin** en bas à droite.
-4. Choisis la période, le sport et si tu veux le détail de chaque séance.
+4. Choisis la période (dont « Depuis mon dernier envoi » pour n'ajouter que les nouveautés), le sport et si tu veux le détail de chaque séance.
 5. Clique sur **Ajouter à la conversation** : le fichier est joint à ton message. Pose ta question et envoie.
 
 Tu peux aussi cliquer sur l'icône de l'extension dans la barre de Chrome pour copier le texte ou télécharger le fichier `.md`.
@@ -43,7 +43,9 @@ Tu peux aussi cliquer sur l'icône de l'extension dans la barre de Chrome pour c
 | État de forme | VO2 max, statut d'entraînement, charge aiguë et chronique, équilibre de charge, prédictions 5 km / 10 km / semi / marathon |
 | Activités | Date, type, distance, durée, allure ou vitesse, FC moyenne et max, dénivelé, effet d'entraînement, charge, calories |
 | Détail des séances (option) | Course : tours, zones cardio, cadence, foulée, contact au sol, puissance, météo. Muscu : séries, répétitions, charges |
-| Journées | Sommeil et phases, score de sommeil, HRV, FC au repos, stress, Body Battery, Readiness, pas. Au-delà de 4 semaines, les jours plus anciens sont résumés par semaine |
+| Stress (option, cochée par défaut) | Répartition repos / faible / moyen / élevé, stress max, stress pendant le sommeil, mesures brutes toutes les 3 minutes (90 derniers jours), journal « Lifestyle » de Garmin s'il est rempli |
+| Cycle menstruel (option, décochée par défaut) | Phase du cycle si elle est suivie dans Garmin |
+| Journées | Heures de coucher et de réveil, sommeil et phases, score de sommeil, HRV, FC au repos, stress, Body Battery, Readiness, pas. Une ligne par jour, uniquement les valeurs Garmin, sans moyenne calculée |
 
 ## Limites
 

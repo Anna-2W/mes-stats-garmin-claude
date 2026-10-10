@@ -1,11 +1,11 @@
-// Bouton « Garmin » dans claude.ai : récupère les données et les joint au message en cours.
+// Bouton « Garmin » dans claude.ai et chatgpt.com : récupère les données et les joint au message en cours.
 (() => {
   if (document.getElementById("garmin-for-claude")) return;
 
   const host = document.createElement("div");
   host.id = "garmin-for-claude";
   host.style.cssText = "position:fixed;right:20px;bottom:110px;z-index:2147483647";
-  // Shadow DOM : le style de claude.ai ne touche pas au nôtre, et inversement.
+  // Shadow DOM : le style du site ne touche pas au nôtre, et inversement.
   const root = host.attachShadow({ mode: "open" });
   root.innerHTML = `
     <style>
@@ -15,7 +15,11 @@
       .fab:hover { background: #0e7490; }
       .panel { position: absolute; right: 0; bottom: 48px; width: 280px; padding: 14px; border-radius: 12px;
                background: #fff; color: #1a1a1a; box-shadow: 0 8px 32px rgba(0,0,0,.25); }
-      .panel h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+      .head { display: flex; align-items: center; justify-content: space-between; margin: 0 0 10px; }
+      .head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+      .lang { display: flex; border: 1px solid #ddd; border-radius: 999px; overflow: hidden; }
+      .lang button { padding: 2px 8px; border: 0; background: #fff; color: #555; font-size: 11px; font-weight: 600; cursor: pointer; }
+      .lang button.on { background: #0891b2; color: #fff; }
       .field { display: block; margin-bottom: 8px; color: #555; }
       .field select { display: block; width: 100%; margin-top: 3px; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
                background: #fff; color: #1a1a1a; }
@@ -34,38 +38,43 @@
                  border-radius: 50%; animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
       .actions { display: flex; gap: 6px; margin-top: 10px; }
+      .foot { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee;
+              font-size: 11px; color: #999; }
+      .foot a { font-size: 11px; color: #0e7490; text-decoration: none; }
+      .foot a:hover { text-decoration: underline; }
       [hidden] { display: none !important; }
     </style>
     <div class="panel" hidden>
-      <h2>Ajouter mes données Garmin</h2>
-      <label class="field">Période
-        <select class="days">
-          <option value="7">7 derniers jours</option>
-          <option value="28" selected>4 dernières semaines</option>
-          <option value="90">3 derniers mois</option>
-          <option value="180">6 derniers mois</option>
-          <option value="365">1 an</option>
-        </select>
+      <div class="head">
+        <h2 data-i18n="panelTitle"></h2>
+        <div class="lang"><button data-lang="en">EN</button><button data-lang="fr">FR</button></div>
+      </div>
+      <label class="field"><span data-i18n="period"></span>
+        <select class="days"></select>
       </label>
-      <label class="field">Activités
+      <div class="since" hidden></div>
+      <label class="field"><span data-i18n="activities"></span>
         <select class="sport">
-          <option value="all">Toutes</option>
-          <option value="running">Course</option>
-          <option value="strength">Muscu</option>
-          <option value="cycling">Vélo</option>
-          <option value="swimming">Natation</option>
-          <option value="walking">Marche / rando</option>
+          <option value="all" data-i18n="sportAll"></option>
+          <option value="running" data-i18n="sportRunning"></option>
+          <option value="strength" data-i18n="sportStrength"></option>
+          <option value="cycling" data-i18n="sportCycling"></option>
+          <option value="swimming" data-i18n="sportSwimming"></option>
+          <option value="walking" data-i18n="sportWalking"></option>
         </select>
       </label>
-      <label class="check"><input type="checkbox" class="details"> Détail de chaque séance (tours, zones, séries)</label>
-      <button class="go">Ajouter à la conversation</button>
+      <label class="check"><input type="checkbox" class="details"> <span data-i18n="details"></span></label>
+      <label class="check"><input type="checkbox" class="stress" checked> <span data-i18n="stress"></span></label>
+      <label class="check"><input type="checkbox" class="cycle"> <span data-i18n="cycle"></span></label>
+      <button class="go" data-i18n="go"></button>
       <div class="bar" hidden><div></div></div>
       <div class="status" hidden></div>
       <div class="actions" hidden>
-        <button class="copy">Copier le texte</button>
+        <button class="copy" data-i18n="copyText"></button>
       </div>
+      <div class="foot"><span class="version"></span><a class="feedback" target="_blank" rel="noopener" data-i18n="feedback"></a></div>
     </div>
-    <button class="fab" title="Ajouter mes données Garmin à la conversation">⌚ Garmin</button>
+    <button class="fab" data-i18n-title="fabTitle">⌚ Garmin</button>
   `;
   document.body.append(host);
 
@@ -76,6 +85,23 @@
   const actions = $(".actions");
   let busy = false;
   let lastMarkdown = "";
+  let resolveDays = () => 28;
+
+  // Langue : anglais par défaut, FR au choix. Le changement s'applique tout de suite et reste mémorisé.
+  async function showLang() {
+    applyTexts(root);
+    $(".version").textContent = `v${chrome.runtime.getManifest().version}`;
+    $(".feedback").href = feedbackUrl();
+    root.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
+    resolveDays = await setupPeriodPicker($(".days"), $(".since"));
+  }
+  root.querySelectorAll(".lang button").forEach((b) =>
+    b.addEventListener("click", async () => {
+      await saveLang(b.dataset.lang);
+      await showLang();
+    })
+  );
+  loadLang().then(showLang);
 
   function setStatus(text, kind = "") {
     status.hidden = false;
@@ -95,21 +121,61 @@
 
   $(".fab").addEventListener("click", () => (panel.hidden = !panel.hidden));
 
-  // Joint le fichier au message en cours, comme un glisser-déposer.
+  // Zone de message visible : selon le site, le compte et la version de l'interface, c'est un éditeur riche ou un textarea.
+  function findComposer() {
+    const selectors = ["#prompt-textarea", '[contenteditable="true"]', '[contenteditable="plaintext-only"]', "textarea"];
+    for (const sel of selectors) {
+      const el = [...document.querySelectorAll(sel)].find((e) => e.offsetParent !== null && !host.contains(e));
+      if (el) return el;
+    }
+    return null;
+  }
+
+  // Champ de fichier qui accepte autre chose que des images (ChatGPT en a un réservé aux photos).
+  function findFileInput() {
+    return [...document.querySelectorAll('input[type="file"]')].find((i) => !/^image\//.test(i.accept ?? ""));
+  }
+
+  // Joint le fichier au message en cours : collage, puis glisser-déposer, puis champ de fichier caché.
   function attachToComposer(file) {
     const dt = new DataTransfer();
     dt.items.add(file);
-    const input = document.querySelector('input[type="file"]');
+    const chatgpt = location.hostname === "chatgpt.com";
+    const input = findFileInput();
+    if (input && !chatgpt) {
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+    const composer = findComposer();
+    if (composer) {
+      composer.focus();
+      const paste = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true });
+      composer.dispatchEvent(paste);
+      // Un site qui accepte le fichier collé annule le collage par défaut. Sinon, on tente un glisser-déposer.
+      if (!paste.defaultPrevented) {
+        const target = composer.closest("form") ?? composer;
+        for (const type of ["dragenter", "dragover", "drop"]) {
+          target.dispatchEvent(new DragEvent(type, { dataTransfer: dt, bubbles: true, cancelable: true }));
+        }
+      }
+      return true;
+    }
     if (input) {
       input.files = dt.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
       return true;
     }
-    const editor = document.querySelector('[contenteditable="true"]');
-    if (editor) {
-      editor.focus();
-      editor.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
-      return true;
+    return false;
+  }
+
+  // Le site affiche le nom du fichier joint : s'il n'apparaît pas, c'est qu'il l'a refusé
+  // (ChatGPT sans compte, par exemple). Notre panneau est dans un shadow DOM, il n'est pas lu ici.
+  async function fileShown(name) {
+    const base = name.replace(/\.md$/, "");
+    for (let i = 0; i < 15; i++) {
+      if (document.body.innerText.includes(base)) return true;
+      await new Promise((r) => setTimeout(r, 300));
     }
     return false;
   }
@@ -126,28 +192,35 @@
       $(".go").disabled = true;
       actions.hidden = true;
       setProgress(0, 1);
-      setStatus("Connexion à Garmin...", "busy");
+      setStatus(t("connecting"), "busy");
       try {
         const res = await chrome.runtime.sendMessage({
           type: "collect",
-          days: Number($(".days").value),
+          days: resolveDays(),
           sport: $(".sport").value,
           details: $(".details").checked,
+          stress: $(".stress").checked,
+          cycle: $(".cycle").checked,
+          lang: LANG,
         });
-        if (!res?.ok) throw new Error(res?.error || "Erreur inconnue.");
+        if (!res?.ok) throw new Error(res?.error || t("unknownError"));
         lastMarkdown = res.markdown;
         setProgress(1, 1);
         const name = `garmin-${new Date().toISOString().slice(0, 10)}.md`;
         const file = new File([res.markdown], name, { type: "text/markdown" });
-        if (attachToComposer(file)) {
-          setStatus(`Fichier ajouté au message ✓${res.warnings ? ` (${res.warnings} donnée(s) manquante(s))` : ""}`, "ok");
+        if (attachToComposer(file) && (await fileShown(name))) {
+          await rememberExport();
+          setStatus(t("attached") + (res.warnings ? t("missing", { n: res.warnings }) : ""), "ok");
+        } else if (findComposer()) {
+          setStatus(t("notAccepted"), "error");
         } else {
-          setStatus("Je n'ai pas trouvé la zone de message. Copie le texte et colle-le.", "error");
+          setStatus(t("noComposer"), "error");
         }
         actions.hidden = false; // secours si la pièce jointe n'apparaît pas
       } catch (e) {
         bar.hidden = true;
-        setStatus(e.message, "error");
+        // Après une mise à jour de l'extension, ce bouton reste dans la page mais n'est plus relié à elle.
+        setStatus(/context invalidated/i.test(e.message) ? t("reloadPage") : e.message, "error");
       } finally {
         busy = false;
         $(".go").disabled = false;
@@ -156,6 +229,6 @@
 
   $(".copy").addEventListener("click", async () => {
     await navigator.clipboard.writeText(lastMarkdown);
-    $(".copy").textContent = "Copié ! Colle avec Cmd+V";
+    $(".copy").textContent = t("copiedPaste");
   });
 })();

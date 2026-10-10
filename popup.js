@@ -16,19 +16,49 @@ function setProgress(done, total) {
   $("progress-bar").style.width = `${total ? Math.round((done / total) * 100) : 0}%`;
 }
 
+let resolveDays = () => 28;
+
+// Langue : anglais par défaut, FR au choix (même réglage que le panneau dans claude.ai).
+async function showLang() {
+  document.documentElement.lang = LANG;
+  document.title = $("title").textContent = t("appName");
+  applyTexts(document);
+  $("version").textContent = `v${chrome.runtime.getManifest().version}`;
+  $("feedback").href = feedbackUrl();
+  document.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
+  resolveDays = await setupPeriodPicker($("days"), $("since"));
+}
+document.querySelectorAll(".lang button").forEach((b) =>
+  b.addEventListener("click", async () => {
+    await saveLang(b.dataset.lang);
+    await showLang();
+  })
+);
+loadLang().then(showLang);
+
 $("go").addEventListener("click", async () => {
+  let days;
+  try {
+    days = resolveDays();
+  } catch (e) {
+    setStatus(e.message, { error: true });
+    return;
+  }
   const options = {
-    days: Number(document.querySelector('input[name="days"]:checked').value),
+    days,
     activities: $("activities").checked,
     sport: $("sport").value,
     details: $("details").checked,
+    stress: $("stress").checked,
+    cycle: $("cycle").checked,
     daily: $("daily").checked,
     fitness: $("fitness").checked,
+    lang: LANG,
   };
   $("go").disabled = true;
   $("result").hidden = true;
   setProgress(0, 1);
-  setStatus("Connexion à Garmin...", { busy: true });
+  setStatus(t("connecting"), { busy: true });
 
   try {
     const result = await runCollection(options, (p) => {
@@ -36,9 +66,10 @@ $("go").addEventListener("click", async () => {
       setStatus(`${p.label} (${Math.round((p.done / p.total) * 100)} %)`, { busy: true });
     });
     $("output").value = result.markdown;
+    await rememberExport();
     $("result").hidden = false;
     setProgress(1, 1);
-    setStatus(result.warnings ? `Terminé, ${result.warnings} donnée(s) manquante(s).` : "Terminé.");
+    setStatus(result.warnings ? t("doneMissing", { n: result.warnings }) : t("done"));
   } catch (e) {
     $("progress").hidden = true;
     setStatus(e.message, { error: true });
@@ -49,8 +80,8 @@ $("go").addEventListener("click", async () => {
 
 $("copy").addEventListener("click", async () => {
   await navigator.clipboard.writeText($("output").value);
-  $("copy").textContent = "Copié !";
-  setTimeout(() => ($("copy").textContent = "Copier"), 1500);
+  $("copy").textContent = t("copied");
+  setTimeout(() => ($("copy").textContent = t("copy")), 1500);
 });
 
 $("download").addEventListener("click", () => {

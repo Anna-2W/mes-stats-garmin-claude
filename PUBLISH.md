@@ -1,4 +1,4 @@
-# Publier Mes Stats Garmin pour Claude : check-list
+# Publier Mes Stats Garmin pour ChatGPT/Claude : check-list
 
 Ce qui est prêt est coché. Le reste demande ton compte ou ton action.
 
@@ -36,7 +36,7 @@ L'URL sera : `https://anna-2w.github.io/mes-stats-garmin-claude/privacy.html`
 1. Construire le paquet : `bash scripts/package.sh` (crée `dist/mes-stats-garmin-claude-1.0.0.zip`)
 2. Dans la console : **Nouvel élément** > envoie le `.zip`
 3. Remplis les onglets avec les textes de `store/LISTING.md`
-4. Ajoute `icons/icon128.png`, `store/promo-440x280.png` et 1 à 5 captures d'écran 1280x800
+4. Ajoute `icons/icon128.png`, `store/<langue>/promo-440x280.png` et les 5 captures de `store/screenshots/<langue>/`
 5. Colle l'URL de la page de confidentialité
 6. **Envoyer pour examen**
 
