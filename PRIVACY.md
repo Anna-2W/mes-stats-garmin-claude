@@ -37,7 +37,7 @@ It is sent to one place only: the conversation **you** choose to attach it to. F
 
 ## Contact
 
-For any question or to report a problem: <https://github.com/Anna-2W/mes-stats-garmin-claude/issues>
+For any question, idea or to report a problem: <https://anna-2w.github.io/mes-stats-garmin-claude/feedback.html>
 
 ---
 
@@ -80,4 +80,4 @@ Elles ne sont transmises qu'à un seul endroit : la conversation à laquelle **t
 
 ## Contact
 
-Pour toute question ou pour signaler un problème : <https://github.com/Anna-2W/mes-stats-garmin-claude/issues>
+Pour toute question, idée ou pour signaler un problème : <https://anna-2w.github.io/mes-stats-garmin-claude/feedback.html?lang=fr>

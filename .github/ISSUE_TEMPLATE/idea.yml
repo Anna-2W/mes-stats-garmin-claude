@@ -1,0 +1,18 @@
+name: "💡 Suggest an idea / Proposer une idée"
+description: "A new feature or an improvement / Une nouvelle fonction ou une amélioration"
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: "Your idea / Ton idée"
+      description: "What would you like the extension to do? / Qu'aimerais-tu que l'extension fasse ?"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: "Why would it help you? / En quoi ça t'aiderait ?"
+      description: "Your sport, your goal, the question you'd ask your AI... / Ton sport, ton objectif, la question que tu poserais à ton IA..."
+    validations:
+      required: false

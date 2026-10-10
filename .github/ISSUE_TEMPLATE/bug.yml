@@ -1,0 +1,52 @@
+name: "🐛 Report a bug / Signaler un bug"
+description: "Something doesn't work as expected / Quelque chose ne marche pas comme prévu"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! / Merci de prendre le temps de le signaler !
+
+        ⚠️ **Never attach your Garmin data file**: it contains your health data. A screenshot of the error is enough.
+        ⚠️ **Ne joins jamais ton fichier de données Garmin** : il contient tes données de santé. Une capture de l'erreur suffit.
+  - type: input
+    id: version
+    attributes:
+      label: "Extension version / Version de l'extension"
+      description: "Shown at the bottom of the extension window / Affichée en bas de la fenêtre de l'extension"
+      placeholder: "1.1.1"
+    validations:
+      required: false
+  - type: dropdown
+    id: where
+    attributes:
+      label: "Where did it happen? / Où est-ce arrivé ?"
+      options:
+        - "Claude (claude.ai)"
+        - "ChatGPT (chatgpt.com)"
+        - "Extension window / Fenêtre de l'extension"
+        - "Other / Autre"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: "What happened? / Que s'est-il passé ?"
+      description: "What did you do, what did you expect, what did you see? / Ce que tu as fait, ce que tu attendais, ce que tu as vu"
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: "Error message / Message d'erreur"
+      description: "Copy the red text from the panel, or paste a screenshot / Copie le texte rouge du panneau, ou colle une capture"
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: "Before sending / Avant d'envoyer"
+      options:
+        - label: "I reloaded the page and I'm signed in to Garmin Connect / J'ai rechargé la page et je suis connecté·e à Garmin Connect"
+        - label: "I did not attach my Garmin data file / Je n'ai pas joint mon fichier de données Garmin"
+          required: true
