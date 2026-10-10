@@ -28,6 +28,9 @@
     .row { display: flex; gap: 8px; margin-top: 8px; }
     .row button { flex: 1; }
     .note { color: #777; font-size: 11px; margin-top: 10px; }
+    .foot { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid #eee; font-size: 11px; color: #999; }
+    .foot a { color: #0e7490; text-decoration: none; }
+    .foot a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -75,6 +78,7 @@
   </div>
 
   <p class="note" data-i18n="loginNote"></p>
+  <div class="foot"><span id="version"></span><a id="feedback" target="_blank" rel="noopener" data-i18n="feedback"></a></div>
   <script src="i18n.js"></script>
   <script src="periods.js"></script>
   <script src="collector.js"></script>

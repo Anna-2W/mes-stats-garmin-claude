@@ -34,6 +34,7 @@ const UI_TEXT = {
     loginNote: "You must be signed in to connect.garmin.com in this browser. Nothing is sent anywhere else.",
     connecting: "Connecting to Garmin...",
     unknownError: "Unknown error.",
+    feedback: "Report a bug · Feedback",
     reloadPage: "The extension was updated: reload this page, then try again.",
     attached: "File added to the message ✓",
     missing: " ({n} missing item(s))",
@@ -88,6 +89,7 @@ const UI_TEXT = {
     loginNote: "Tu dois être connecté·e à connect.garmin.com dans ce navigateur. Rien n'est envoyé ailleurs.",
     connecting: "Connexion à Garmin...",
     unknownError: "Erreur inconnue.",
+    feedback: "Signaler un bug · Idées",
     reloadPage: "L'extension a été mise à jour : recharge cette page, puis réessaie.",
     attached: "Fichier ajouté au message ✓",
     missing: " ({n} donnée(s) manquante(s))",
@@ -231,6 +233,11 @@ async function saveLang(lang) {
   } catch {
     // le choix ne sera simplement pas retenu
   }
+}
+
+// Page « Signaler un bug · Idées » (GitHub Pages), dans la langue choisie et avec la version installée.
+function feedbackUrl() {
+  return `https://anna-2w.github.io/mes-stats-garmin-claude/feedback.html?lang=${LANG}&v=${chrome.runtime.getManifest().version}`;
 }
 
 // Remplit tous les éléments marqués data-i18n (texte) ou data-i18n-title (infobulle) sous root.

@@ -38,6 +38,10 @@
                  border-radius: 50%; animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
       .actions { display: flex; gap: 6px; margin-top: 10px; }
+      .foot { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee;
+              font-size: 11px; color: #999; }
+      .foot a { font-size: 11px; color: #0e7490; text-decoration: none; }
+      .foot a:hover { text-decoration: underline; }
       [hidden] { display: none !important; }
     </style>
     <div class="panel" hidden>
@@ -68,6 +72,7 @@
       <div class="actions" hidden>
         <button class="copy" data-i18n="copyText"></button>
       </div>
+      <div class="foot"><span class="version"></span><a class="feedback" target="_blank" rel="noopener" data-i18n="feedback"></a></div>
     </div>
     <button class="fab" data-i18n-title="fabTitle">⌚ Garmin</button>
   `;
@@ -85,6 +90,8 @@
   // Langue : anglais par défaut, FR au choix. Le changement s'applique tout de suite et reste mémorisé.
   async function showLang() {
     applyTexts(root);
+    $(".version").textContent = `v${chrome.runtime.getManifest().version}`;
+    $(".feedback").href = feedbackUrl();
     root.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
     resolveDays = await setupPeriodPicker($(".days"), $(".since"));
   }

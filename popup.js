@@ -23,6 +23,8 @@ async function showLang() {
   document.documentElement.lang = LANG;
   document.title = $("title").textContent = t("appName");
   applyTexts(document);
+  $("version").textContent = `v${chrome.runtime.getManifest().version}`;
+  $("feedback").href = feedbackUrl();
   document.querySelectorAll(".lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === LANG));
   resolveDays = await setupPeriodPicker($("days"), $("since"));
 }

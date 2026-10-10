@@ -102,7 +102,7 @@ Les mêmes fichiers existent en anglais (`en`) et en français (`fr`), généré
 Ordre des captures : 1-claude, 2-chatgpt, 3-file, 4-features, 5-privacy.
 
 **Site web** : `https://github.com/Anna-2W/mes-stats-garmin-claude`
-**URL d'assistance** : `https://github.com/Anna-2W/mes-stats-garmin-claude/issues`
+**URL d'assistance** : `https://anna-2w.github.io/mes-stats-garmin-claude/feedback.html`
 
 ---
 
